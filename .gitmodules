@@ -5,5 +5,5 @@
 	path = icons
 	url = git@github.com:twbs/icons.git
 [submodule "src/bootstrap"]
-	path = src/bootstrap
+	path = bootstrap
 	url = git@github.com:twbs/bootstrap.git

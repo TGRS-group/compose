@@ -3,37 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <title>Editor</title>
+  <title>Compute</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
   <style type="text/css" media="screen">
     body {
         overflow: hidden;
     }
 
     #editor {
-        margin: 0;
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        left: 0;
-        right: 0;
+        margin: auto;
+	height: 100px;
+	border: 1px solid lightgray;
     }
   </style>
 </head>
 <body>
+<div class="btn-group">
+  <div class="btn-group mr-2" role="group" aria-label="First group">
+    <div class="dropdown" id="script_names">
+      <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        Scripts
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" id="scripts_list"></div>
+    </div>
+  </div>
+  <div class="btn-group mr-2" role="group" aria-label="First group">
+    <button class="btn btn-secondary" type="button" id="save_script">
+      Save
+    </button>
+  </div>
+</div>
+<pre id="editor"></pre>
 
-<pre id="editor">function foo(items) {
-    var i;
-    for (i = 0; i &lt; items.length; i++) {
-        alert("Ace Rocks " + items[i]);
-    }
-}</pre>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.15.3/ace.min.js" integrity="sha512-qz0ztkhkjaI/0GtyBQTsqh8jPxXwZB54vrZpujzzQ9aoi+LYO4V9ybmylrASlvFUIjXI+A9dBgNtMZ44xJieMg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
-<script src="../ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
-<script>
-    var editor = ace.edit("editor");
-    editor.setTheme("ace/theme/twilight");
-    editor.session.setMode("ace/mode/javascript");
+<script id="test1">
+  console.log("Hello world!");
 </script>
 
+<script id="init">
+  function change_editor_to(element) {
+    editor.session.setValue(element.innerHTML);
+    edited_id = element.id;
+  }
+
+  function add_to_dropdown(element) {
+    if(element.id == "") return;
+    let list = document.getElementById("scripts_list");
+    let item = document.createElement("a");
+    item.classList.add("dropdown-item");
+    item.href = "#";
+    item.innerHTML = element.id;
+    item.addEventListener("click", (event) => {change_editor_to(element)}); 
+    list.appendChild(item);
+  }
+
+	function initialize_scripts_dropdown() {
+		let elements = document.getElementsByTagName("script"); // filter and list by id
+		for(let element of elements) {
+			add_to_dropdown(element);
+			if (element.id == edited_id) change_editor_to(element);
+		}
+	}
+
+	function update_script() {
+	  let element = document.getElementById(edited_id);
+	  element.remove();
+	  element = document.createElement("script");
+	  element.id = edited_id;
+	  let script = document.createTextNode(editor.session.getValue());
+	  element.appendChild(script);
+	  document.body.appendChild(element);
+	  let list = document.getElementById("scripts_list");
+	  for(let item of list.children) {
+      if (item.innerHTML == edited_id)
+	      item.addEventListener("click", (event) => {change_editor_to(element)}); 
+    }
+	}
+
+  var editor = ace.edit("editor",{maxLines: Infinity});
+  var edited_id = "init";
+  editor.setTheme("ace/theme/twilight");
+  editor.session.setMode("ace/mode/javascript");
+
+  initialize_scripts_dropdown();
+
+	var save_btn = document.getElementById("save_script");
+	save_btn.addEventListener("click", (event) => update_script());
+</script>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
 </body>
 </html>
