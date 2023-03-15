@@ -31,6 +31,16 @@
     <button class="btn btn-secondary" type="button" id="save_script">
       Save
     </button>
+    <button class="btn btn-secondary" type="button" id="delete_script">
+      Delete
+    </button>
+  </div>
+
+  <div class="input-group mr-2">
+    <input type="text" class="form-control" id="new_script_name" placeholder="script_name" aria-label="NewScriptName" aria-describedby="basic-addon1">
+    <button class="btn btn-secondary" type="button" id="create_script">
+      Create
+    </button>
   </div>
 </div>
 <pre id="editor"></pre>
@@ -46,7 +56,15 @@
     editor.session.setValue(element.innerHTML);
     edited_id = element.id;
   }
-
+  
+  function create_script(content) {
+    element = document.createElement("script");
+	  element.id = edited_id;
+	  let script = document.createTextNode(content);
+	  element.appendChild(script);
+	  document.body.appendChild(element);
+    return element;
+  }
   function add_to_dropdown(element) {
     if(element.id == "") return;
     let list = document.getElementById("scripts_list");
@@ -66,14 +84,33 @@
 		}
 	}
 
+  function remove_script() {
+	  let element = document.getElementById(edited_id);
+	  element.remove();
+    let list = document.getElementById("scripts_list");
+	  for(let item of list.children) {
+      if (item.innerHTML == edited_id)
+        item.remove()
+    }
+	  change_editor_to(document.getElementById("scripts_list").children[0]);
+  }
+
+  function add_new_script() {
+	  let new_id = document.getElementById("new_script_name").value;
+		let elements = document.getElementsByTagName("script");
+		for(let element of elements) {
+      if(element.id == new_id) return;
+    }
+    edited_id = new_id;
+    create_script("");
+    add_to_dropdown(element);
+	  change_editor_to(element);
+  }
+
 	function update_script() {
 	  let element = document.getElementById(edited_id);
 	  element.remove();
-	  element = document.createElement("script");
-	  element.id = edited_id;
-	  let script = document.createTextNode(editor.session.getValue());
-	  element.appendChild(script);
-	  document.body.appendChild(element);
+    element = create_script(editor.session.getValue());
 	  let list = document.getElementById("scripts_list");
 	  for(let item of list.children) {
       if (item.innerHTML == edited_id)
@@ -90,6 +127,12 @@
 
 	var save_btn = document.getElementById("save_script");
 	save_btn.addEventListener("click", (event) => update_script());
+
+	var del_btn = document.getElementById("delete_script");
+	del_btn.addEventListener("click", (event) => remove_script());
+
+	var new_btn = document.getElementById("create_script");
+	new_btn.addEventListener("click", (event) => add_new_script());
 </script>
 
 <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
