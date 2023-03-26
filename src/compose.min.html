@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Compose</title>
+</head>
+<body>
+
+<script id="init">
+	// insert textarea element into page
+	var textarea = document.createElement('textarea');
+	textarea.id = 'editor';
+	document.body.appendChild(textarea);
+	// populate textarea with content of script element with id="init"
+	text = document.getElementById('init').innerHTML;
+	textarea.value = text;
+	// make textarea width 80 characters
+	textarea.style.width = '80ch';
+	// make textarea the size of its content
+	textarea.style.height = textarea.scrollHeight + 'px';
+	// add button titled "store" to page
+	var button = document.createElement('button');
+	button.id = 'store';
+	button.innerHTML = 'store';
+	document.body.appendChild(button);
+	// when button is clicked, replace existing script tag with id "init" with new script tag containing the textarea content with id="init"
+	button.onclick = function() {
+	// first - remove all child nodes of document.body
+	document.body.innerHTML = '';
+	var script = document.createElement('script');
+	script.id = 'init';
+	scriptText = document.createTextNode(textarea.value);
+	script.appendChild(scriptText);
+	document.body.appendChild(script);
+	}
+</script>
+</body>
+</html>
