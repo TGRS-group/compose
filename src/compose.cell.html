@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Compose</title>
+</head>
+<body>
+
+<script id="compose">
+//+ initializePageElements
+  function addModeSelection() {
+    // insert radio buttons into page
+    var radio1 = document.createElement('input');
+    radio1.type = 'radio';
+    radio1.name = 'mode';
+    radio1.value = 'wholeScript';
+    radio1.id = 'whole script';
+    document.body.appendChild(radio1);
+    var label1 = document.createElement('label');
+    label1.htmlFor = 'whole script';
+    label1.innerHTML = 'Whole script';
+    document.body.appendChild(label1);
+    var radio2 = document.createElement('input');
+    radio2.type = 'radio';
+    radio2.name = 'mode';
+    radio2.value = 'cell';
+    radio2.id = 'cell';
+    document.body.appendChild(radio2);
+    var label2 = document.createElement('label');
+    label2.htmlFor = 'cell';
+    label2.innerHTML = 'Cell';
+    document.body.appendChild(label2);
+    // make whole script radio button selected by default
+    radio1.checked = true;
+  }
+
+  function addTextArea() {
+    // insert textarea element into page
+    var textarea = document.createElement('textarea');
+    textarea.id = 'editor';
+    document.body.appendChild(textarea);
+    // make textarea width 80 characters
+    textarea.style.width = '80ch';
+  }
+
+  function addStoreButton() {
+    // add button titled "store" to page
+    var button = document.createElement('button');
+    button.id = 'store';
+    button.innerHTML = 'store';
+    document.body.appendChild(button);
+  }
+  function addCellNamesSelect() {
+    var select = document.createElement('select');
+    select.id = 'cellNames';
+    select.style.visibility = 'hidden';
+    document.body.appendChild(select);
+    var cr = document.createElement('br');
+    document.body.appendChild(cr);
+  }
+
+  addModeSelection();
+  addCellNamesSelect();
+  addTextArea();
+  addStoreButton();
+//- initializePageElements
+//+ updatePageElements
+  function updateTextArea(text) {
+    textarea = document.getElementById('editor');
+    textarea.value = text;
+    textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
+  } 
+
+  function updateStoreButton(onstore) {
+    document.getElementById('store').onclick = function() {
+      onstore();
+    }
+  }
+
+  // recreate script element with id="compose" from given text
+  function updateScript(text) {
+    let script = document.createElement('script');
+    script.id = 'compose';
+    let scriptText = document.createTextNode(text);
+    script.appendChild(scriptText);
+    document.body.appendChild(script);
+  }
+
+//- updatePageElements
+//+ handleCellData
+// function that given a string returns a dictionary of cell names and their content
+function parseCells(text) {
+  var cells = {};
+  var lines = text.split('\n');
+  var cellName = '';
+  var cellContent = '';
+  for(var i = 0; i < lines.length; i++) {
+    if(lines[i].match(/^\/\/\+[ ]*[a-zA-Z0-9]+/)) {
+      if(cellName != '') {
+        cells[cellName] = cellContent;
+      }
+      cellName = lines[i].match(/[a-zA-Z0-9]+/)[0];
+      cellContent = '';
+    }
+    else if(lines[i].match(/^\/\/\-[ ]*[a-zA-Z0-9]+/)) {
+      if(cellName != '') {
+        cells[cellName] = cellContent;
+      }
+      cellName = '';
+      cellContent = '';
+    }
+    else {
+      cellContent += lines[i] + '\n';
+    }
+  }
+  if(cellName != '') {
+    cells[cellName] = cellContent;
+  }
+  return cells;
+}
+
+// function that given a dictionary of cell names and their content returns a string
+function stringifyCells(cells) {
+  var text = '';
+  for(var cellName in cells) {
+    text += '//+ ' + cellName + '\n';
+    text += cells[cellName];
+    text += '//- ' + cellName + '\n';
+  }
+  return text;
+}
+//- handleCellData
+//+ initializeCallbacks
+  onSelectWholeScript = function() {
+    document.getElementById('cellNames').style.visibility = 'hidden';
+    // populate textarea with content of script element with id="compose"
+    updateTextArea(document.getElementById('compose').innerHTML);
+    // when button is clicked, replace existing script tag with id "compose" with new script tag containing the textarea content with id="compose"
+    updateStoreButton(function() {
+      let scriptText = document.getElementById('editor').value;
+      document.body.innerHTML = '';
+      updateScript(scriptText);
+    })
+  }
+
+  onSelectCell = function() {
+    let whole_text = document.getElementById('compose').innerHTML;
+    let cells = parseCells(whole_text);
+    // add a select element to the page with an option for each cell name
+    var cellNames = Object.keys(cells);
+    let select = document.getElementById('cellNames');
+    select.style.visibility = 'visible';
+    for(var i = 0; i < cellNames.length; i++) {
+      var option = document.createElement('option');
+      option.value = cellNames[i];
+      option.innerHTML = cellNames[i];
+      select.appendChild(option);
+    }
+    select.onchange = function() {
+      var cellName = select.value;
+      updateTextArea(cells[cellName]);
+    } 
+    // when button is clicked, replace existing script tag with id "compose" with new script tag containing the textarea content with id="compose"
+    updateStoreButton(function() {
+      let cellName = select.value;
+      let cellContent = textarea.value;
+      cells[cellName] = cellContent;
+      whole_text = stringifyCells(cells);
+      document.body.innerHTML = '';
+      updateScript(whole_text);
+    })
+    // populate textarea with content of selected cell
+    updateTextArea(cells[cellNames[0]]);
+  }
+
+  // if whole script is selected, populate textarea with content of script element with id="compose"
+  if(document.getElementById('whole script').checked) {
+    onSelectWholeScript();
+  }
+  else if(document.getElementById('cell').checked) {
+    onSelectCell();
+  }
+  // call onSelectWholeScript or onSelectCell when radio button is clicked
+  document.getElementById('whole script').onclick = onSelectWholeScript;
+  document.getElementById('cell').onclick = onSelectCell;
+//- initializeCallbacks
+</script>
+</body>
+</html>
