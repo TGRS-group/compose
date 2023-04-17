@@ -6,65 +6,24 @@
   <title>Compose</title>
 </head>
 <body>
+<div id="default"></div>
 
 <script id="compose">
-//+ initializePageElements
-  function addModeSelection() {
-    // insert radio buttons into page
-    var radio1 = document.createElement('input');
-    radio1.type = 'radio';
-    radio1.name = 'mode';
-    radio1.value = 'wholeScript';
-    radio1.id = 'whole script';
-    document.body.appendChild(radio1);
-    var label1 = document.createElement('label');
-    label1.htmlFor = 'whole script';
-    label1.innerHTML = 'Whole script';
-    document.body.appendChild(label1);
-    var radio2 = document.createElement('input');
-    radio2.type = 'radio';
-    radio2.name = 'mode';
-    radio2.value = 'cell';
-    radio2.id = 'cell';
-    document.body.appendChild(radio2);
-    var label2 = document.createElement('label');
-    label2.htmlFor = 'cell';
-    label2.innerHTML = 'Cell';
-    document.body.appendChild(label2);
-    // make whole script radio button selected by default
-    radio1.checked = true;
-  }
-
-  function addTextArea() {
-    // insert textarea element into page
-    var textarea = document.createElement('textarea');
-    textarea.id = 'editor';
-    document.body.appendChild(textarea);
-    // make textarea width 80 characters
-    textarea.style.width = '80ch';
-  }
-
-  function addStoreButton() {
-    // add button titled "store" to page
-    var button = document.createElement('button');
-    button.id = 'store';
-    button.innerHTML = 'store';
-    document.body.appendChild(button);
-  }
-  function addCellNamesSelect() {
-    var select = document.createElement('select');
-    select.id = 'cellNames';
-    select.style.visibility = 'hidden';
-    document.body.appendChild(select);
-    var cr = document.createElement('br');
-    document.body.appendChild(cr);
-  }
-
-  addModeSelection();
-  addCellNamesSelect();
-  addTextArea();
-  addStoreButton();
-//- initializePageElements
+//+ mainHtml {"type": "html", "target": "default"}
+//  <h1>Compose</h1>
+//  <p>Compose is a tool for creating and editing scripts.</p>
+//  <p>It is a work in progress.</p>
+//  <input type="radio" name="mode" value="wholeScript" id="whole script" checked>
+//  <label for="whole script">Whole script</label>
+//  <input type="radio" name="mode" value="cell" id="cell">
+//  <label for="cell">Cell</label>
+//  <select id="cellNames" style="visibility: hidden;">
+//    <option value="mainHtml">mainHtml</option>
+//  </select>
+//  <br>
+//  <textarea id="editor" style="width: 80ch; height: 16ch;"></textarea>
+//  <br>
+//  <button id="store">store</button>
 //+ updatePageElements
   function updateTextArea(text) {
     textarea = document.getElementById('editor');
@@ -89,7 +48,49 @@
 
 //- updatePageElements
 //+ handleCellData
-// function that given a string returns a dictionary of cell names and their content
+function cellType(attributes) {
+  if(attributes['type']) {
+    return attributes['type'];
+  }
+  return 'javascript';
+}
+
+function editableCellContent(type, storableContent) {
+  if(type == 'javascript') {
+    return storableContent;
+  }
+  else {
+    var lines = storableContent.split('\n');
+    var result = '';
+    for(var i = 0; i < lines.length; i++) {
+      if(lines[i].match(/^\/\/[ ]*[a-zA-Z0-9\<\>]+/)) {
+        result += lines[i].substring(2) + '\n';
+      }
+    }
+    return result;
+  }
+}
+
+function storableCellContent(type, editableContent) {
+  if(type == 'javascript') {
+    return content;
+  }
+  else {
+    var lines = content.split('\n');
+    var result = '';
+    for(var i = 0; i < lines.length; i++) {
+      result += '// ' + lines[i] + '\n';
+    }
+    return result;
+  }
+}
+
+function appendCell(cells, cellName, cellAttributes, cellContent) {
+  cells[cellName] = {};
+  cells[cellName]['attributes'] = cellAttributes;
+  cells[cellName]['content'] = cellContent;
+}
+
 function parseCells(text) {
   var cells = {};
   var lines = text.split('\n');
@@ -98,14 +99,20 @@ function parseCells(text) {
   for(var i = 0; i < lines.length; i++) {
     if(lines[i].match(/^\/\/\+[ ]*[a-zA-Z0-9]+/)) {
       if(cellName != '') {
-        cells[cellName] = cellContent;
+        appendCell(cells, cellName, cellAttributes, cellContent);
       }
       cellName = lines[i].match(/[a-zA-Z0-9]+/)[0];
+      cellAttributes = lines[i].match(/\{.*\}/);
+      if (cellAttributes == null) {
+        cellAttributes = {};
+      } else {
+        cellAttributes = JSON.parse(cellAttributes[0])
+      }
       cellContent = '';
     }
     else if(lines[i].match(/^\/\/\-[ ]*[a-zA-Z0-9]+/)) {
       if(cellName != '') {
-        cells[cellName] = cellContent;
+        appendCell(cells, cellName, cellAttributes, cellContent);
       }
       cellName = '';
       cellContent = '';
@@ -115,18 +122,22 @@ function parseCells(text) {
     }
   }
   if(cellName != '') {
-    cells[cellName] = cellContent;
+    appendCell(cells, cellName, cellAttributes, cellContent);
   }
   return cells;
 }
 
-// function that given a dictionary of cell names and their content returns a string
+function stringifyAttributes(attributes) {
+  return JSON.stringify(attributes);
+}
+// function that given a dictionary of cell names, their attributes, and their content returns a string
+// that can be used to recreate the cells
 function stringifyCells(cells) {
   var text = '';
-  for(var cellName in cells) {
-    text += '//+ ' + cellName + '\n';
-    text += cells[cellName];
-    text += '//- ' + cellName + '\n';
+  var cellNames = Object.keys(cells);
+  for(var i = 0; i < cellNames.length; i++) {
+    text += '//+ ' + cellNames[i] + stringifyAttributes(cells[cellNames[i]]['attributes']) + '\n';
+    text += cells[cellNames[i]]['content'];
   }
   return text;
 }
@@ -139,7 +150,7 @@ function stringifyCells(cells) {
     // when button is clicked, replace existing script tag with id "compose" with new script tag containing the textarea content with id="compose"
     updateStoreButton(function() {
       let scriptText = document.getElementById('editor').value;
-      document.body.innerHTML = '';
+      document.body.innerHTML = '<div id="default"></div>';
       updateScript(scriptText);
     })
   }
@@ -152,26 +163,44 @@ function stringifyCells(cells) {
     let select = document.getElementById('cellNames');
     select.style.visibility = 'visible';
     for(var i = 0; i < cellNames.length; i++) {
-      var option = document.createElement('option');
+    // add a select element to the page with an option for each cell name if it doesn't already exist
+      var newOption = false;
+      var option = select.options[i];
+      if( option == undefined) {
+        option = document.createElement('option');
+        newOption = true;
+      }
       option.value = cellNames[i];
       option.innerHTML = cellNames[i];
-      select.appendChild(option);
+      if(newOption) {
+        select.appendChild(option);
+      }
     }
     select.onchange = function() {
       var cellName = select.value;
-      updateTextArea(cells[cellName]);
+      updateTextArea(editableCellContent(cellType(cells[cellName]['attributes']), cells[cellName]['content']));
     } 
     // when button is clicked, replace existing script tag with id "compose" with new script tag containing the textarea content with id="compose"
     updateStoreButton(function() {
       let cellName = select.value;
       let cellContent = textarea.value;
-      cells[cellName] = cellContent;
+      cells[cellName]['content'] = storableCellContent(cellType(cells[cellName]['attributes']), cellContent);
       whole_text = stringifyCells(cells);
       document.body.innerHTML = '';
       updateScript(whole_text);
     })
     // populate textarea with content of selected cell
-    updateTextArea(cells[cellNames[0]]);
+    updateTextArea(editableCellContent(cellType(cells[cellNames[0]]['attributes']), cells[cellNames[0]]['content']));
+  }
+  // start of initialization
+  var cells = parseCells(document.getElementById('compose').innerHTML);
+  var cellKeys = Object.keys(cells);
+  for (var i = 0; i < cellKeys.length; i++) {
+    cell = cells[cellKeys[i]];
+    if (cellType(cell.attributes) == 'html') {
+      target = document.getElementById(cell.attributes.target);
+      target.innerHTML = editableCellContent(cellType(cell.attributes), cell.content);
+    }
   }
 
   // if whole script is selected, populate textarea with content of script element with id="compose"
