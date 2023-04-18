@@ -23,8 +23,9 @@
 //  <br>
 //  <textarea id="editor" style="width: 80ch; height: 16ch;"></textarea>
 //  <br>
-//  <button id="store">store</button>
-//+ updatePageElements
+//  <button id="store">update and store</button>
+
+//+ initializationCode
   function updateTextArea(text) {
     textarea = document.getElementById('editor');
     textarea.value = text;
@@ -32,12 +33,9 @@
   } 
 
   function updateStoreButton(onstore) {
-    document.getElementById('store').onclick = function() {
-      onstore();
-    }
+    document.getElementById('store').onclick = onstore;
   }
 
-  // recreate script element with id="compose" from given text
   function updateScript(text) {
     let script = document.createElement('script');
     script.id = 'compose';
@@ -46,49 +44,33 @@
     document.body.appendChild(script);
   }
 
-//- updatePageElements
-//+ handleCellData
 function cellType(attributes) {
-  if(attributes['type']) {
-    return attributes['type'];
-  }
-  return 'javascript';
+  return attributes.type || 'javascript';
 }
 
 function editableCellContent(type, storableContent) {
-  if(type == 'javascript') {
+  if(type == 'javascript')
     return storableContent;
-  }
-  else {
-    var lines = storableContent.split('\n');
-    var result = '';
-    for(var i = 0; i < lines.length; i++) {
-      if(lines[i].match(/^\/\/[ ]*[a-zA-Z0-9\<\>]+/)) {
-        result += lines[i].substring(2) + '\n';
-      }
+  let lines = storableContent.split('\n');
+  let result = '';
+  for(var i = 0; i < lines.length; i++) {
+    if(lines[i].match(/^\/\//)) {
+      result += lines[i].substring(2) + '\n';
     }
-    return result;
   }
+  return result;
 }
 
 function storableCellContent(type, editableContent) {
   if(type == 'javascript') {
-    return content;
+    return editableContent;
   }
-  else {
-    var lines = content.split('\n');
-    var result = '';
-    for(var i = 0; i < lines.length; i++) {
-      result += '// ' + lines[i] + '\n';
-    }
-    return result;
+  let lines = editableContent.split('\n');
+  let result = '';
+  for(var i = 0; i < lines.length; i++) {
+    result += '//' + lines[i] + '\n';
   }
-}
-
-function appendCell(cells, cellName, cellAttributes, cellContent) {
-  cells[cellName] = {};
-  cells[cellName]['attributes'] = cellAttributes;
-  cells[cellName]['content'] = cellContent;
+  return result;
 }
 
 function parseCells(text) {
@@ -97,11 +79,11 @@ function parseCells(text) {
   var cellName = '';
   var cellContent = '';
   for(var i = 0; i < lines.length; i++) {
-    if(lines[i].match(/^\/\/\+[ ]*[a-zA-Z0-9]+/)) {
+    if(lines[i].match(/^\/\/\+[ ]*[a-zA-Z0-9_]+/)) {
       if(cellName != '') {
-        appendCell(cells, cellName, cellAttributes, cellContent);
+        cells[cellName] = { "attributes": cellAttributes, "content": cellContent };
       }
-      cellName = lines[i].match(/[a-zA-Z0-9]+/)[0];
+      cellName = lines[i].match(/[a-zA-Z0-9_]+/)[0];
       cellAttributes = lines[i].match(/\{.*\}/);
       if (cellAttributes == null) {
         cellAttributes = {};
@@ -110,44 +92,29 @@ function parseCells(text) {
       }
       cellContent = '';
     }
-    else if(lines[i].match(/^\/\/\-[ ]*[a-zA-Z0-9]+/)) {
-      if(cellName != '') {
-        appendCell(cells, cellName, cellAttributes, cellContent);
-      }
-      cellName = '';
-      cellContent = '';
-    }
     else {
       cellContent += lines[i] + '\n';
     }
   }
   if(cellName != '') {
-    appendCell(cells, cellName, cellAttributes, cellContent);
+    cells[cellName] = { "attributes": cellAttributes, "content": cellContent };
   }
   return cells;
 }
 
-function stringifyAttributes(attributes) {
-  return JSON.stringify(attributes);
-}
-// function that given a dictionary of cell names, their attributes, and their content returns a string
-// that can be used to recreate the cells
 function stringifyCells(cells) {
   var text = '';
   var cellNames = Object.keys(cells);
   for(var i = 0; i < cellNames.length; i++) {
-    text += '//+ ' + cellNames[i] + stringifyAttributes(cells[cellNames[i]]['attributes']) + '\n';
-    text += cells[cellNames[i]]['content'];
+    text += '//+ ' + cellNames[i] + JSON.stringify(cells[cellNames[i]].attributes) + '\n';
+    text += cells[cellNames[i]].content;
   }
   return text;
 }
-//- handleCellData
-//+ initializeCallbacks
+
   onSelectWholeScript = function() {
     document.getElementById('cellNames').style.visibility = 'hidden';
-    // populate textarea with content of script element with id="compose"
     updateTextArea(document.getElementById('compose').innerHTML);
-    // when button is clicked, replace existing script tag with id "compose" with new script tag containing the textarea content with id="compose"
     updateStoreButton(function() {
       let scriptText = document.getElementById('editor').value;
       document.body.innerHTML = '<div id="default"></div>';
@@ -158,43 +125,34 @@ function stringifyCells(cells) {
   onSelectCell = function() {
     let whole_text = document.getElementById('compose').innerHTML;
     let cells = parseCells(whole_text);
-    // add a select element to the page with an option for each cell name
-    var cellNames = Object.keys(cells);
+    let cellNames = Object.keys(cells);
     let select = document.getElementById('cellNames');
+    select.options.length = 0;
     select.style.visibility = 'visible';
     for(var i = 0; i < cellNames.length; i++) {
-    // add a select element to the page with an option for each cell name if it doesn't already exist
-      var newOption = false;
-      var option = select.options[i];
-      if( option == undefined) {
-        option = document.createElement('option');
-        newOption = true;
-      }
+      let option = document.createElement('option');
       option.value = cellNames[i];
       option.innerHTML = cellNames[i];
-      if(newOption) {
-        select.appendChild(option);
-      }
+      select.appendChild(option);
     }
     select.onchange = function() {
-      var cellName = select.value;
-      updateTextArea(editableCellContent(cellType(cells[cellName]['attributes']), cells[cellName]['content']));
+      let cellName = select.value;
+      updateTextArea(editableCellContent(cellType(cells[cellName].attributes), cells[cellName].content));
     } 
-    // when button is clicked, replace existing script tag with id "compose" with new script tag containing the textarea content with id="compose"
     updateStoreButton(function() {
       let cellName = select.value;
       let cellContent = textarea.value;
-      cells[cellName]['content'] = storableCellContent(cellType(cells[cellName]['attributes']), cellContent);
+      cells[cellName].content = storableCellContent(cellType(cells[cellName].attributes), cellContent);
       whole_text = stringifyCells(cells);
-      document.body.innerHTML = '';
+      document.body.innerHTML = '<div id="default"></div>';
       updateScript(whole_text);
     })
-    // populate textarea with content of selected cell
-    updateTextArea(editableCellContent(cellType(cells[cellNames[0]]['attributes']), cells[cellNames[0]]['content']));
+    updateTextArea(editableCellContent(cellType(cells[cellNames[0]].attributes), cells[cellNames[0]].content));
   }
-  // start of initialization
+
   var cells = parseCells(document.getElementById('compose').innerHTML);
   var cellKeys = Object.keys(cells);
+
   for (var i = 0; i < cellKeys.length; i++) {
     cell = cells[cellKeys[i]];
     if (cellType(cell.attributes) == 'html') {
@@ -203,17 +161,15 @@ function stringifyCells(cells) {
     }
   }
 
-  // if whole script is selected, populate textarea with content of script element with id="compose"
   if(document.getElementById('whole script').checked) {
     onSelectWholeScript();
   }
   else if(document.getElementById('cell').checked) {
     onSelectCell();
   }
-  // call onSelectWholeScript or onSelectCell when radio button is clicked
+
   document.getElementById('whole script').onclick = onSelectWholeScript;
   document.getElementById('cell').onclick = onSelectCell;
-//- initializeCallbacks
 </script>
 </body>
 </html>
