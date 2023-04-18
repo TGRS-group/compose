@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Compose</title>
+</head>
+<body>
+<div id="default"></div>
+
+<script id="compose">
+//+ mainHtml {"type": "html", "target": "default"}
+//  <h1>Compute</h1>
+//  <p>A tool for executing JavaScript code in the browser.<br>
+//  Enter any JS code on the left panel, click "update and store" to execute.
+// <p> To edit this text or alter the entire page layout - select "mainHtml" in the cell selector.<br>
+// To edit the initialization code - select "initializationCode" in the cell selector.<br>
+// To edit the entire script - select the "Whole script" radio button. You can then add new cells, modify cells names, etc. by adding and editing comments of the form <pre>//+ cellName {"type": "html", "target": "default"}</pre> or <pre>//+ cellName {"type": "javascript"}</pre> to the code.
+// </p>
+//  <div style="display: flex; flex-direction: row;">
+//  <div style="flex: 1;">
+// <h2>Input</h2>
+//  <input type="radio" name="mode" value="cell" id="cell" checked>
+//  <label for="cell">Cell</label>
+//  <select id="cellNames" style="visibility: hidden;">
+//    <option value="mainHtml">mainHtml</option>
+//  </select>
+//  <input type="radio" name="mode" value="wholeScript" id="whole script">
+//  <label for="whole script">Whole script</label>
+//  <br>
+//  <textarea id="editor" style="width: 80ch; height: 16ch;"></textarea>
+//  <br>
+//  <button id="store">update and store</button>
+//  <br>
+//  </div>
+//  <div style="flex: 1;">
+// <h2>Output</h2>
+//  <div id="output"></div>
+//  </div>
+
+//+ initializationCode
+  function updateTextArea(text) {
+    textarea = document.getElementById('editor');
+    textarea.value = text;
+    textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
+  } 
+
+  function updateStoreButton(onstore) {
+    document.getElementById('store').onclick = onstore;
+  }
+
+  function updateScript(text) {
+    let script = document.createElement('script');
+    script.id = 'compose';
+    let scriptText = document.createTextNode(text);
+    script.appendChild(scriptText);
+    document.body.appendChild(script);
+  }
+
+function cellType(attributes) {
+  return attributes.type || 'javascript';
+}
+
+function editableCellContent(type, storableContent) {
+  if(type == 'javascript')
+    return storableContent;
+  let lines = storableContent.split('\n');
+  let result = '';
+  for(var i = 0; i < lines.length; i++) {
+    if(lines[i].match(/^\/\//)) {
+      result += lines[i].substring(2) + '\n';
+    }
+  }
+  return result;
+}
+
+function storableCellContent(type, editableContent) {
+  if(type == 'javascript') {
+    return editableContent;
+  }
+  let lines = editableContent.split('\n');
+  let result = '';
+  for(var i = 0; i < lines.length; i++) {
+    result += '//' + lines[i] + '\n';
+  }
+  return result;
+}
+
+function parseCells(text) {
+  var cells = {};
+  var lines = text.split('\n');
+  var cellName = '';
+  var cellContent = '';
+  for(var i = 0; i < lines.length; i++) {
+    if(lines[i].match(/^\/\/\+[ ]*[a-zA-Z0-9_]+/)) {
+      if(cellName != '') {
+        cells[cellName] = { "attributes": cellAttributes, "content": cellContent };
+      }
+      cellName = lines[i].match(/[a-zA-Z0-9_]+/)[0];
+      cellAttributes = lines[i].match(/\{.*\}/);
+      if (cellAttributes == null) {
+        cellAttributes = {};
+      } else {
+        cellAttributes = JSON.parse(cellAttributes[0])
+      }
+      cellContent = '';
+    }
+    else {
+      cellContent += lines[i] + '\n';
+    }
+  }
+  if(cellName != '') {
+    cells[cellName] = { "attributes": cellAttributes, "content": cellContent };
+  }
+  return cells;
+}
+
+function stringifyCells(cells) {
+  var text = '';
+  var cellNames = Object.keys(cells);
+  for(var i = 0; i < cellNames.length; i++) {
+    text += '//+ ' + cellNames[i] + JSON.stringify(cells[cellNames[i]].attributes) + '\n';
+    text += cells[cellNames[i]].content;
+  }
+  return text;
+}
+
+  onSelectWholeScript = function() {
+    document.getElementById('cellNames').style.visibility = 'hidden';
+    updateTextArea(document.getElementById('compose').innerHTML);
+    updateStoreButton(function() {
+      let scriptText = document.getElementById('editor').value;
+      document.body.innerHTML = '<div id="default"></div>';
+      updateScript(scriptText);
+    })
+  }
+
+  onSelectCell = function() {
+    let whole_text = document.getElementById('compose').innerHTML;
+    let cells = parseCells(whole_text);
+    let cellNames = Object.keys(cells);
+    let select = document.getElementById('cellNames');
+    select.options.length = 0;
+    select.style.visibility = 'visible';
+    for(var i = 0; i < cellNames.length; i++) {
+      let option = document.createElement('option');
+      option.value = cellNames[i];
+      option.innerHTML = cellNames[i];
+      if(cellNames[i] == 'computeCode') {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    }
+    select.onchange = function() {
+      let cellName = select.value;
+      updateTextArea(editableCellContent(cellType(cells[cellName].attributes), cells[cellName].content));
+    } 
+    updateStoreButton(function() {
+      let cellName = select.value;
+      let cellContent = textarea.value;
+      cells[cellName].content = storableCellContent(cellType(cells[cellName].attributes), cellContent);
+      whole_text = stringifyCells(cells);
+      document.body.innerHTML = '<div id="default"></div>';
+      updateScript(whole_text);
+    })
+    updateTextArea(editableCellContent(cellType(cells["computeCode"].attributes), cells["computeCode"].content));
+  }
+
+  var cells = parseCells(document.getElementById('compose').innerHTML);
+  var cellKeys = Object.keys(cells);
+
+  for (var i = 0; i < cellKeys.length; i++) {
+    cell = cells[cellKeys[i]];
+    if (cellType(cell.attributes) == 'html') {
+      target = document.getElementById(cell.attributes.target);
+      target.innerHTML = editableCellContent(cellType(cell.attributes), cell.content);
+    }
+  }
+
+  if(document.getElementById('whole script').checked) {
+    onSelectWholeScript();
+  }
+  else if(document.getElementById('cell').checked) {
+    onSelectCell();
+  }
+
+  document.getElementById('whole script').onclick = onSelectWholeScript;
+  document.getElementById('cell').onclick = onSelectCell;
+//+ computeCode
+document.getElementById("output").innerHTML="Hello World!";
+</script>
+</body>
+</html>
