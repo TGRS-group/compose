@@ -26,26 +26,22 @@
 //  <button id="store">update and store</button>
 
 //+ initializationCode
-  function updateTextArea(text) {
-    textarea = document.getElementById('editor');
-    textarea.value = text;
-    textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
-  } 
+function updateTextArea(text) {
+  textarea = document.getElementById('editor');
+  textarea.value = text;
+  textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
+} 
 
-  function updateStoreButton(onstore) {
-    document.getElementById('store').onclick = onstore;
-  }
+function updateStoreButton(onstore) {
+  document.getElementById('store').onclick = onstore;
+}
 
-  function updateScript(text) {
-    let script = document.createElement('script');
-    script.id = 'compose';
-    let scriptText = document.createTextNode(text);
-    script.appendChild(scriptText);
-    document.body.appendChild(script);
-  }
-
-function cellType(attributes) {
-  return attributes.type || 'javascript';
+function updateScript(text) {
+  let script = document.createElement('script');
+  script.id = 'compose';
+  let scriptText = document.createTextNode(text);
+  script.appendChild(scriptText);
+  document.body.appendChild(script);
 }
 
 function editableCellContent(type, storableContent) {
@@ -53,9 +49,9 @@ function editableCellContent(type, storableContent) {
     return storableContent;
   let lines = storableContent.split('\n');
   let result = '';
-  for(var i = 0; i < lines.length; i++) {
-    if(lines[i].match(/^\/\//)) {
-      result += lines[i].substring(2) + '\n';
+  for(const line of lines) {
+    if(line.match(/^\/\//)) {
+      result += line.substring(2) + '\n';
     }
   }
   return result;
@@ -67,109 +63,101 @@ function storableCellContent(type, editableContent) {
   }
   let lines = editableContent.split('\n');
   let result = '';
-  for(var i = 0; i < lines.length; i++) {
-    result += '//' + lines[i] + '\n';
+  for(const line of lines) {
+    result += '//' + line + '\n';
   }
   return result;
 }
 
+function parseHeader(line) {
+  if(!line.trim().match(/^\/\/\+[ ]*[a-zA-Z0-9_]+/))
+    return null;
+  let cellName = line.match(/[a-zA-Z0-9_]+/)[0];
+  let cellAttributes = JSON.parse((line.match(/\{.*\}/) || ['{"type": "javascript"}'])[0]);
+  return { "name": cellName, "attributes": cellAttributes };
+}
+
 function parseCells(text) {
   var cells = {};
-  var lines = text.split('\n');
+  var lines = text.trim().split('\n');
   var cellName = '';
-  var cellContent = '';
-  for(var i = 0; i < lines.length; i++) {
-    if(lines[i].match(/^\/\/\+[ ]*[a-zA-Z0-9_]+/)) {
-      if(cellName != '') {
-        cells[cellName] = { "attributes": cellAttributes, "content": cellContent };
-      }
-      cellName = lines[i].match(/[a-zA-Z0-9_]+/)[0];
-      cellAttributes = lines[i].match(/\{.*\}/);
-      if (cellAttributes == null) {
-        cellAttributes = {};
-      } else {
-        cellAttributes = JSON.parse(cellAttributes[0])
-      }
-      cellContent = '';
+  for(const line of lines) {
+    header = parseHeader(line);
+    if(header) {
+      cells[header.name] = { "attributes": header.attributes, "content": ''};
+      cellName = header.name;
+      continue;
     }
-    else {
-      cellContent += lines[i] + '\n';
-    }
-  }
-  if(cellName != '') {
-    cells[cellName] = { "attributes": cellAttributes, "content": cellContent };
+    cells[cellName].content += line + '\n';
   }
   return cells;
 }
 
 function stringifyCells(cells) {
   var text = '';
-  var cellNames = Object.keys(cells);
-  for(var i = 0; i < cellNames.length; i++) {
-    text += '//+ ' + cellNames[i] + JSON.stringify(cells[cellNames[i]].attributes) + '\n';
-    text += cells[cellNames[i]].content;
+  for(const cellName of Object.keys(cells)) {
+    text += '//+ ' + cellName + JSON.stringify(cells[cellName].attributes) + '\n';
+    text += cells[cellName].content;
   }
   return text;
 }
 
-  onSelectWholeScript = function() {
-    document.getElementById('cellNames').style.visibility = 'hidden';
-    updateTextArea(document.getElementById('compose').innerHTML);
-    updateStoreButton(function() {
-      let scriptText = document.getElementById('editor').value;
-      document.body.innerHTML = '<div id="default"></div>';
-      updateScript(scriptText);
-    })
-  }
+onSelectWholeScript = function() {
+  document.getElementById('cellNames').style.visibility = 'hidden';
+  updateTextArea(document.getElementById('compose').innerHTML);
+  updateStoreButton(function() {
+    let scriptText = document.getElementById('editor').value;
+    document.body.innerHTML = '<div id="default"></div>';
+    updateScript(scriptText);
+  })
+}
 
-  onSelectCell = function() {
-    let whole_text = document.getElementById('compose').innerHTML;
-    let cells = parseCells(whole_text);
-    let cellNames = Object.keys(cells);
-    let select = document.getElementById('cellNames');
-    select.options.length = 0;
-    select.style.visibility = 'visible';
-    for(var i = 0; i < cellNames.length; i++) {
-      let option = document.createElement('option');
-      option.value = cellNames[i];
-      option.innerHTML = cellNames[i];
-      select.appendChild(option);
-    }
-    select.onchange = function() {
-      let cellName = select.value;
-      updateTextArea(editableCellContent(cellType(cells[cellName].attributes), cells[cellName].content));
-    } 
-    updateStoreButton(function() {
-      let cellName = select.value;
-      let cellContent = textarea.value;
-      cells[cellName].content = storableCellContent(cellType(cells[cellName].attributes), cellContent);
-      whole_text = stringifyCells(cells);
-      document.body.innerHTML = '<div id="default"></div>';
-      updateScript(whole_text);
-    })
-    updateTextArea(editableCellContent(cellType(cells[cellNames[0]].attributes), cells[cellNames[0]].content));
+onSelectCell = function() {
+  let whole_text = document.getElementById('compose').innerHTML;
+  let cells = parseCells(whole_text);
+  let cellNames = Object.keys(cells);
+  let select = document.getElementById('cellNames');
+  select.options.length = 0;
+  select.style.visibility = 'visible';
+  for(const cellName of Object.keys(cells)) {
+    let option = document.createElement('option');
+    option.value = cellName;
+    option.innerHTML = cellName;
+    select.appendChild(option);
   }
+  select.onchange = function() {
+    let cellName = select.value;
+    updateTextArea(editableCellContent(cells[cellName].attributes.type, cells[cellName].content));
+  } 
+  updateStoreButton(function() {
+    let cellName = select.value;
+    let cellContent = textarea.value;
+    cells[cellName].content = storableCellContent(cells[cellName].attributes.type, cellContent);
+    whole_text = stringifyCells(cells);
+    document.body.innerHTML = '<div id="default"></div>';
+    updateScript(whole_text);
+  })
+  updateTextArea(editableCellContent(cells[cellNames[0]].attributes.type, cells[cellNames[0]].content));
+}
 
-  var cells = parseCells(document.getElementById('compose').innerHTML);
-  var cellKeys = Object.keys(cells);
+var cells = parseCells(document.getElementById('compose').innerHTML);
 
-  for (var i = 0; i < cellKeys.length; i++) {
-    cell = cells[cellKeys[i]];
-    if (cellType(cell.attributes) == 'html') {
-      target = document.getElementById(cell.attributes.target);
-      target.innerHTML = editableCellContent(cellType(cell.attributes), cell.content);
-    }
+for(let [cellName, cell] of Object.entries(cells)) {
+  if (cell.attributes.type == 'html') {
+    target = document.getElementById(cell.attributes.target);
+    target.innerHTML = editableCellContent(cell.attributes.type, cell.content);
   }
+}
 
-  if(document.getElementById('whole script').checked) {
-    onSelectWholeScript();
-  }
-  else if(document.getElementById('cell').checked) {
-    onSelectCell();
-  }
+if(document.getElementById('whole script').checked) {
+  onSelectWholeScript();
+}
+else if(document.getElementById('cell').checked) {
+  onSelectCell();
+}
 
-  document.getElementById('whole script').onclick = onSelectWholeScript;
-  document.getElementById('cell').onclick = onSelectCell;
+document.getElementById('whole script').onclick = onSelectWholeScript;
+document.getElementById('cell').onclick = onSelectCell;
 </script>
 </body>
 </html>
