@@ -23,7 +23,8 @@
 //  <br>
 //  <textarea id="editor" style="width: 80ch; height: 16ch;"></textarea>
 //  <br>
-//  <button id="store">update and store</button>
+//  <button id="store">store</button>
+//  <button id="execute">store and execute</button>
 
 //+ initializationCode
 function updateTextArea(text) {
@@ -32,9 +33,6 @@ function updateTextArea(text) {
   textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
 } 
 
-function updateStoreButton(onstore) {
-  document.getElementById('store').onclick = onstore;
-}
 
 function updateScript(text) {
   let script = document.createElement('script');
@@ -102,19 +100,33 @@ function stringifyCells(cells) {
   return text;
 }
 
+function storeCell() {
+  let cellName = document.getElementById('cellNames').value;
+  let cellContent = document.getElementById('editor').value;
+  cells[cellName].content = storableCellContent(cells[cellName].attributes.type, cellContent);
+}
+
+function storeWholeScript() {
+  let updated_script = document.getElementById('editor').value;
+  cells = parseCells(updated_script);
+}
+
+function execute() {
+  document.body.innerHTML = '<div id="default"></div>';
+  updateScript(stringifyCells(cells));
+}
+
 onSelectWholeScript = function() {
   document.getElementById('cellNames').style.visibility = 'hidden';
-  updateTextArea(document.getElementById('compose').innerHTML);
-  updateStoreButton(function() {
-    let scriptText = document.getElementById('editor').value;
-    document.body.innerHTML = '<div id="default"></div>';
-    updateScript(scriptText);
-  })
+  updateTextArea(stringifyCells(cells));
+  document.getElementById('store').onclick = storeWholeScript;
+  document.getElementById('execute').onclick = function() {
+    storeWholeScript();
+    execute();
+  }
 }
 
 onSelectCell = function() {
-  let whole_text = document.getElementById('compose').innerHTML;
-  let cells = parseCells(whole_text);
   let cellNames = Object.keys(cells);
   let select = document.getElementById('cellNames');
   select.options.length = 0;
@@ -129,14 +141,11 @@ onSelectCell = function() {
     let cellName = select.value;
     updateTextArea(editableCellContent(cells[cellName].attributes.type, cells[cellName].content));
   } 
-  updateStoreButton(function() {
-    let cellName = select.value;
-    let cellContent = textarea.value;
-    cells[cellName].content = storableCellContent(cells[cellName].attributes.type, cellContent);
-    whole_text = stringifyCells(cells);
-    document.body.innerHTML = '<div id="default"></div>';
-    updateScript(whole_text);
-  })
+  document.getElementById('store').onclick = storeCell;
+  document.getElementById('execute').onclick = function() {
+    storeCell();
+    execute();
+  }
   updateTextArea(editableCellContent(cells[cellNames[0]].attributes.type, cells[cellNames[0]].content));
 }
 
