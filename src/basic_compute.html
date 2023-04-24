@@ -43,7 +43,7 @@ function updateTextArea(text) {
   textarea = document.getElementById('editor');
   textarea.value = text;
   textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
-} 
+}
 
 
 function updateScript(text) {
@@ -87,10 +87,15 @@ function parseHeader(line) {
   return { "name": cellName, "attributes": cellAttributes };
 }
 
+function trimScript(text) {
+  text = text.split('\/\/--BEGIN');
+  text = text[text.length - 1].split('\/\/--END')[0];
+  return text.trim();
+}
+
 function parseCells(text) {
   var cells = {};
-  var lines = text.trim().split('\n');
-  lines = lines.filter(line => ! line.match(/\/\/\/DROP/));
+  var lines = trimScript(text).split('\n');
   var cellName = '';
   for(const line of lines) {
     header = parseHeader(line);
@@ -125,17 +130,31 @@ function storeWholeScript() {
 }
 
 function execute() {
-console.log("executing");
   currentScript = document.getElementById('compose').innerHTML;
   newScript = stringifyCells(cells);
   document.body.innerHTML = '<div id="default"></div>';
   try{
-    new Function(newScript);
-    updateScript("try {\/\/\/DROP\n"+newScript+"\n} catch(e) {console.log('error caught'); console.log(e);}\/\/\/DROP\n");
+    new Function(newScript); // check if the script is valid
+    updateScript(`
+      try { initialized = false;
+      \/\/--BEGIN
+      ${newScript}
+      \/\/--END
+       } catch(e) {
+         alert('Error while executing updated script\\n'+ e);
+         if(! initialized) {
+           document.getElementById('compose').remove();
+           let script = document.createElement('script');
+           script.id = 'compose';
+           let scriptText = document.createTextNode(currentScript);
+           script.appendChild(scriptText);
+           document.body.appendChild(script);
+         }
+       }
+    `);
   } catch(e) {
-    console.log('error updating script');
-    console.log(e);
-    updateScript(currentScript);
+    alert('Updated script is not valid\n'+ e);
+    updateScript(trimScript(currentScript));
   }
 }
 
@@ -163,7 +182,7 @@ onSelectCell = function() {
   select.onchange = function() {
     let cellName = select.value;
     updateTextArea(editableCellContent(cells[cellName].attributes.type, cells[cellName].content));
-  } 
+  }
   document.getElementById('store').onclick = storeCell;
   document.getElementById('execute').onclick = function() {
     storeCell();
@@ -190,6 +209,7 @@ else if(document.getElementById('cell').checked) {
 
 document.getElementById('whole script').onclick = onSelectWholeScript;
 document.getElementById('cell').onclick = onSelectCell;
+initialized = true;
 
 //+ specificSetup
 function setOutput(text) {
