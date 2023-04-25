@@ -1,1 +1,39 @@
-<h1>hello</h1>
+<h1>Welcome to Compose</h1>
+<h2>Outline</h2>
+Compose is a concept that transforms the modern web browser intended use on its head.
+Instead of treating the browser as a piece of software used for consuming, reading, viewing and interacting with online content, it uses a small HTML (+Javascript) code to expose the browser engine and convert it into a computation engine and creation tool for digital documents.
+
+<h2>Components</h2>
+The Compose repository contains different .html files each providing a unique platform for interacting with the browser and composing digital content, or demonstrating different applications of the concept. Currently, three such files are available:
+<dl>
+  <dt><a href="https://tgrs.github.io/compose/src/minimal_poc.html">minimal_poc.html</a></dt>
+  <dd>The most bare bones embodiment of the compose concept. In less than 20 lines of html+javascript code the user (composer) can access and interact with the raw browser engine to recreate the current page.</dd>
+  <dt><a href="https://tgrs.github.io/compose/src/mvp.html">mvp.html</a></dt>
+  <dd>A Minimal Viable Product (MVP) version that includes the notion of blocks of content, allowing authoring of either javascript or html blocks, and block-level editing. This version also supports error-resilient execution of code. Future development of this version will allow history tracking, css blocks, and support for Right To Left (RTL) editing to facilitate authoring content in RTL languages.</dd>
+  <dt><a href="https://tgrs.github.io/compose/src/mvp_compute.html">mvp_compute.html</a></dt>
+  <dd>A Minimal Viable Product (MVP) version that includes the notion of blocks of content, allowing authoring of either javascript or html blocks, and block-level editing. This version also supports error-resilient execution of code. Future development of this version will allow history tracking, css blocks, and support for Right To Left (RTL) editing to facilitate authoring content in RTL languages.</dd>
+</dl>
+
+<h2>Upcoming features</h2>
+Down the roadmap we intend to publish files with (in arbitrary order):
+<ul>
+  <li>History tracking</li>
+  <li>Support for RTL editing through block attributes</li>
+  <li>Support for css blocks</li>
+  <li>Support for markdown blocks (using external libraries)</li>
+  <li>Support for syntax highlighting and auto-completion in code blocks (through external js editors)</li>
+  <li>A gallery of examples and demos showing specific use cases including numerical calculation of Pi, physical simulations of multi-particle systems, and more</li>
+</ul>
+
+<h2>Philosophy and motivation</h2>
+Back in the 80's, when the first personal computers became commercial products, their default mode of operation was to give the user a basic programming prompt (Commodore 64, etc.). While very poor in terms of computational power (especially compared with today's computers), early computers embodied the vision of being useful for computing, exploring, learning and creating software as a default, or primary mode of operation and use case.
+In the past ~40 years of personal computer evolution, this value has been left far behind, being replaced with the vision of making computers practical for achieving specific business/personal goals through task-specific software tools (text/document editors, spreadsheets, image manipulation programs, email clients, games, and finally, the online version of all of the above and more in the ubiquitous modern browser). Even the operation and access to these tools required less and less knowledge and computer literacy, specifically with the rise of windows-based GUI (first in Macintosh computers, and later on in MS Windows systems).
+Compose is an attempt to reincarnate the vision of personal computers as tools for computation, exploration, and creation of digital content from their very core, in a way that gives the user (now better termed 'composer') unmoderated access to the raw computation engine underlying modern browsers, with minimal intervention, giving the composer the freedom to craft themselves their optimal workbench (for example by adding a syntax-highlighting editor component, interpreters for different kinds of programming languages or inputs, and more), then use that workbench to explore and create whatever digital content or application they wish.
+
+<h2>Difference from other browser-based programming environments</h2>
+There are many popular browser-centered (literate) programming environments. Some examples include Jupyter, observableHQ, codepen, and others. Albeit seemingly offering similar functionality to Compose, these products have a very different philosophy. They give the user a managed sandbox/environment to write code and generate documents conforming to a pre-defined template. For example - The user cannot (from within the environment) change the structure/layout of the document, they cannot tweak the product to support RTL text input, implement keyboard shortcuts, or get a service-independent, standalone copy of their created content that they can share with peers. The different core philosophy of Compose allows its users to get a control level that is only limited by the capabilities of their browser and their own imagination, without requiring any external software installations or tools except for the browser itself.
+
+<h2>Who we are</h2>
+Compose is currently developed by Prof. Boaz Katz and Dr. Uri Barenholz from the TGRS group in the Weizmann institute of science. We encourage other individuals to join and take part in its development.
+
+We hope you find Compose useful and fun to play with, and would love seeing a community evolve around it, sharing different creations, demos, and utilities it facilitates composing.
