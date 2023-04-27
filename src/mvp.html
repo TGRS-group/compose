@@ -10,13 +10,13 @@
 
 <script id="compose">
 //+ mainHtml {"type": "html", "target": "default"}
-//  <h1>Compute</h1>
+//  <h1>Compose</h1>
 //  <div style="display: flex; flex-direction: row;">
 //  <div style="flex: 1;">
 // <h2>Input</h2>
-//  <input type="radio" name="mode" value="cell" id="cell" checked>
-//  <label for="cell">Cell</label>
-//  <select id="cellNames" style="visibility: hidden;">
+//  <input type="radio" name="mode" value="block" id="block" checked>
+//  <label for="block">Block</label>
+//  <select id="blockNames" style="visibility: hidden;">
 //    <option value="mainHtml">mainHtml</option>
 //  </select>
 //  <input type="radio" name="mode" value="wholeScript" id="whole script">
@@ -36,9 +36,9 @@
 // <br>
 //  <p>A tool for executing JavaScript (JS) code in the browser.<br>
 //  Enter any JS code on the left panel, click "update and store" to execute.
-// <p> To edit this text or alter the entire page layout - select "mainHtml" in the cell selector.<br>
-// To edit the initialization code - select "initializationCode" in the cell selector.<br>
-// To edit the entire script - select the "Whole script" radio button. You can then add new cells, modify cells names, etc. by adding and editing comments of the form <pre>//+ cellName {"type": "html", "target": "default"}</pre> or <pre>//+ cellName {"type": "javascript"}</pre> to the code.
+// <p> To edit this text or alter the entire page layout - select "mainHtml" in the block selector.<br>
+// To edit the initialization code - select "initializationCode" in the block selector.<br>
+// To edit the entire script - select the "Whole script" radio button. You can then add new blocks, modify block names, etc. by adding and editing comments of the form <pre>//+ blockName {"type": "html", "target": "default"}</pre> or <pre>//+ blockName {"type": "javascript"}</pre> to the code.
 // </p>
 //+ initializationCode
 function updateTextArea(text) {
@@ -56,7 +56,7 @@ function updateScript(text) {
   document.body.appendChild(script);
 }
 
-function editableCellContent(type, storableContent) {
+function editableBlockContent(type, storableContent) {
   if(type == 'javascript')
     return storableContent;
   let lines = storableContent.split('\n');
@@ -69,7 +69,7 @@ function editableCellContent(type, storableContent) {
   return result;
 }
 
-function storableCellContent(type, editableContent) {
+function storableBlockContent(type, editableContent) {
   if(type == 'javascript') {
     return editableContent;
   }
@@ -84,9 +84,9 @@ function storableCellContent(type, editableContent) {
 function parseHeader(line) {
   if(!line.trim().match(/^\/\/\+[ ]*[a-zA-Z0-9_]+/))
     return null;
-  let cellName = line.match(/[a-zA-Z0-9_]+/)[0];
-  let cellAttributes = JSON.parse((line.match(/\{.*\}/) || ['{"type": "javascript"}'])[0]);
-  return { "name": cellName, "attributes": cellAttributes };
+  let blockName = line.match(/[a-zA-Z0-9_]+/)[0];
+  let blockAttributes = JSON.parse((line.match(/\{.*\}/) || ['{"type": "javascript"}'])[0]);
+  return { "name": blockName, "attributes": blockAttributes };
 }
 
 function trimScript(text) {
@@ -95,45 +95,45 @@ function trimScript(text) {
   return text.trim();
 }
 
-function parseCells(text) {
-  var cells = {};
+function parseBlocks(text) {
+  var blocks = {};
   var lines = trimScript(text).split('\n');
-  var cellName = '';
+  var blockName = '';
   for(const line of lines) {
     header = parseHeader(line);
     if(header) {
-      cells[header.name] = { "attributes": header.attributes, "content": ''};
-      cellName = header.name;
+      blocks[header.name] = { "attributes": header.attributes, "content": ''};
+      blockName = header.name;
       continue;
     }
-    cells[cellName].content += line + '\n';
+    blocks[blockName].content += line + '\n';
   }
-  return cells;
+  return blocks;
 }
 
-function stringifyCells(cells) {
+function stringifyBlocks(blocks) {
   var text = '';
-  for(const cellName of Object.keys(cells)) {
-    text += '//+ ' + cellName + JSON.stringify(cells[cellName].attributes) + '\n';
-    text += cells[cellName].content;
+  for(const blockName of Object.keys(blocks)) {
+    text += '//+ ' + blockName + JSON.stringify(blocks[blockName].attributes) + '\n';
+    text += blocks[blockName].content;
   }
   return text;
 }
 
-function storeCell() {
-  let cellName = document.getElementById('cellNames').value;
-  let cellContent = document.getElementById('editor').value;
-  cells[cellName].content = storableCellContent(cells[cellName].attributes.type, cellContent);
+function storeBlock() {
+  let blockName = document.getElementById('blockNames').value;
+  let blockContent = document.getElementById('editor').value;
+  blocks[blockName].content = storableBlockContent(blocks[blockName].attributes.type, blockContent);
 }
 
 function storeWholeScript() {
   let updated_script = document.getElementById('editor').value;
-  cells = parseCells(updated_script);
+  blocks = parseBlocks(updated_script);
 }
 
 function execute() {
   currentScript = document.getElementById('compose').innerHTML;
-  newScript = stringifyCells(cells);
+  newScript = stringifyBlocks(blocks);
   document.body.innerHTML = '<div id="default"></div>';
   try{
     new Function(newScript); // check if the script is valid
@@ -161,8 +161,8 @@ function execute() {
 }
 
 onSelectWholeScript = function() {
-  document.getElementById('cellNames').style.visibility = 'hidden';
-  updateTextArea(stringifyCells(cells));
+  document.getElementById('blockNames').style.visibility = 'hidden';
+  updateTextArea(stringifyBlocks(blocks));
   document.getElementById('store').onclick = storeWholeScript;
   document.getElementById('execute').onclick = function() {
     storeWholeScript();
@@ -170,47 +170,47 @@ onSelectWholeScript = function() {
   }
 }
 
-onSelectCell = function() {
-  let cellNames = Object.keys(cells);
-  let select = document.getElementById('cellNames');
+onSelectBlock = function() {
+  let blockNames = Object.keys(blocks);
+  let select = document.getElementById('blockNames');
   select.options.length = 0;
   select.style.visibility = 'visible';
-  for(const cellName of Object.keys(cells)) {
+  for(const blockName of Object.keys(blocks)) {
     let option = document.createElement('option');
-    option.value = cellName;
-    option.innerHTML = cellName;
+    option.value = blockName;
+    option.innerHTML = blockName;
     select.appendChild(option);
   }
   select.onchange = function() {
-    let cellName = select.value;
-    updateTextArea(editableCellContent(cells[cellName].attributes.type, cells[cellName].content));
+    let blockName = select.value;
+    updateTextArea(editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
   }
-  document.getElementById('store').onclick = storeCell;
+  document.getElementById('store').onclick = storeBlock;
   document.getElementById('execute').onclick = function() {
-    storeCell();
+    storeBlock();
     execute();
   }
-  updateTextArea(editableCellContent(cells[cellNames[0]].attributes.type, cells[cellNames[0]].content));
+  updateTextArea(editableBlockContent(blocks[blockNames[0]].attributes.type, blocks[blockNames[0]].content));
 }
 
-var cells = parseCells(document.getElementById('compose').innerHTML);
+var blocks = parseBlocks(document.getElementById('compose').innerHTML);
 
-for(let [cellName, cell] of Object.entries(cells)) {
-  if (cell.attributes.type == 'html') {
-    target = document.getElementById(cell.attributes.target);
-    target.innerHTML = editableCellContent(cell.attributes.type, cell.content);
+for(let [blockName, block] of Object.entries(blocks)) {
+  if (block.attributes.type == 'html') {
+    target = document.getElementById(block.attributes.target);
+    target.innerHTML = editableBlockContent(block.attributes.type, block.content);
   }
 }
 
 if(document.getElementById('whole script').checked) {
   onSelectWholeScript();
 }
-else if(document.getElementById('cell').checked) {
-  onSelectCell();
+else if(document.getElementById('block').checked) {
+  onSelectBlock();
 }
 
 document.getElementById('whole script').onclick = onSelectWholeScript;
-document.getElementById('cell').onclick = onSelectCell;
+document.getElementById('block').onclick = onSelectBlock;
 initialized = true;
 
 //+ specificSetup
@@ -218,9 +218,9 @@ function setOutput(text) {
   document.getElementById("output").innerHTML=text;
 }
 
-if("computeCode" in cells) {
-  document.getElementById("cellNames").value = "computeCode";
-  document.getElementById("cellNames").onchange();
+if("computeCode" in blocks) {
+  document.getElementById("blockNames").value = "computeCode";
+  document.getElementById("blockNames").onchange();
 }
 
 //+ computeCode
