@@ -10,22 +10,36 @@
 
 <script id="compose">
 //+ mainHtml {"type": "html", "target": "default"}
-//  <h1>Compose</h1>
-//  <p>Compose is a tool for creating and editing scripts.</p>
-//  <p>It is a work in progress.</p>
-//  <input type="radio" name="mode" value="wholeScript" id="whole script" checked>
-//  <label for="whole script">Whole script</label>
-//  <input type="radio" name="mode" value="cell" id="cell">
+//  <h1>Compute</h1>
+//  <div style="display: flex; flex-direction: row;">
+//  <div style="flex: 1;">
+// <h2>Input</h2>
+//  <input type="radio" name="mode" value="cell" id="cell" checked>
 //  <label for="cell">Cell</label>
 //  <select id="cellNames" style="visibility: hidden;">
 //    <option value="mainHtml">mainHtml</option>
 //  </select>
+//  <input type="radio" name="mode" value="wholeScript" id="whole script">
+//  <label for="whole script">Whole script</label>
 //  <br>
 //  <textarea id="editor" style="width: 80ch; height: 16ch;"></textarea>
 //  <br>
 //  <button id="store">store</button>
 //  <button id="execute">store and execute</button>
-
+//  <br>
+//  </div>
+//  <div style="flex: 1;">
+// <h2>Output</h2>
+//  <div id="output"></div>
+//  </div>
+//  </div>
+// <br>
+//  <p>A tool for executing JavaScript (JS) code in the browser.<br>
+//  Enter any JS code on the left panel, click "update and store" to execute.
+// <p> To edit this text or alter the entire page layout - select "mainHtml" in the cell selector.<br>
+// To edit the initialization code - select "initializationCode" in the cell selector.<br>
+// To edit the entire script - select the "Whole script" radio button. You can then add new cells, modify cells names, etc. by adding and editing comments of the form <pre>//+ cellName {"type": "html", "target": "default"}</pre> or <pre>//+ cellName {"type": "javascript"}</pre> to the code.
+// </p>
 //+ initializationCode
 function updateTextArea(text) {
   textarea = document.getElementById('editor');
@@ -198,6 +212,20 @@ else if(document.getElementById('cell').checked) {
 document.getElementById('whole script').onclick = onSelectWholeScript;
 document.getElementById('cell').onclick = onSelectCell;
 initialized = true;
+
+//+ specificSetup
+function setOutput(text) {
+  document.getElementById("output").innerHTML=text;
+}
+
+if("computeCode" in cells) {
+  document.getElementById("cellNames").value = "computeCode";
+  document.getElementById("cellNames").onchange();
+}
+
+//+ computeCode
+// enter code here
+// call setOutput(text) to print output on the output panel
 </script>
 </body>
 </html>
