@@ -9,21 +9,34 @@ The Compose repository contains different .html files each providing a unique pl
   <dt><a href="https://tgrs-group.github.io/compose/src/minimal_poc.html">minimal_poc.html</a></dt>
   <dd>The most bare bones embodiment of the compose concept. In less than 20 lines of html+javascript code the user (composer) can access and interact with the raw browser engine to recreate the current page.</dd>
   <dt><a href="https://tgrs-group.github.io/compose/src/mvp.html">mvp.html</a></dt>
-  <dd>A Minimal Viable Product (MVP) version that includes the notion of blocks of content, allowing authoring of either javascript or html blocks, and block-level editing. This version also supports error-resilient execution of code. Future development of this version will allow history tracking, css blocks, and support for Right To Left (RTL) editing to facilitate authoring content in RTL languages.</dd>
-  <dt><a href="https://tgrs-group.github.io/compose/src/mvp_compute.html">mvp_compute.html</a></dt>
-  <dd>A Minimal Viable Product (MVP) version that includes the notion of blocks of content, allowing authoring of either javascript or html blocks, and block-level editing. This version also supports error-resilient execution of code. Future development of this version will allow history tracking, css blocks, and support for Right To Left (RTL) editing to facilitate authoring content in RTL languages.</dd>
+  <dd>A Minimal Viable Product (MVP) version that includes:
+<ul>
+  <li>The notion of dividing the content into blocks. The user can either edit the entire content, or a specific block</li>
+  <li>Support for javascript, or html block types</li>
+  <li>Specifying block-level attributes (like target element for html blocks)</li>
+  <li>Separating storing the content from executing it</li>
+  <li>Reasonable error resilience and reporting upon execution</li>
+  <li>Dividing the page into input and output panes</li>
+  <li>Defining convenience function for setting the output pane content</li>
+  <li>Sensible startup defaults (block editing mode, set to a blank javascript block)</li>
+</ul>
+Future development of this version will support:
+<ul>
+  <li>RTL content editing through block-level attributes</li>
+  <li>History tracking</li>
+  <li>css blocks</li>
+</ul>
+</dd>
 </dl>
 
 <h2>Upcoming features</h2>
-Down the roadmap we intend to publish files with (in arbitrary order):
+Down the roadmap we intend to publish files with (in arbitrary order, on top of the features mentioned above, most using external libraries):
 <ul>
-  <li>History tracking</li>
-  <li>Support for RTL editing through block attributes</li>
-  <li>Support for css blocks</li>
-  <li>Support for markdown blocks (using external libraries)</li>
-  <li>Support for syntax highlighting and auto-completion in code blocks (through external js editors)</li>
-  <li>A gallery of examples and demos showing specific use cases including numerical calculation of Pi, physical simulations of multi-particle systems, and more</li>
+  <li>Support for markdown blocks</li>
+  <li>Support for syntax highlighting and auto-completion in code blocks</li>
+  <li>Improved styling and layout</li>
 </ul>
+  We will also start building a gallery of examples and demos showing specific use cases including numerical calculation of Pi, physical simulations of multi-particle systems, and more.
 
 <h2>Philosophy and motivation</h2>
 Back in the 80's, when the first personal computers became commercial products, their default mode of operation was to give the user a basic programming prompt (Commodore 64, etc.). While very poor in terms of computational power (especially compared with today's computers), early computers embodied the vision of being useful for computing, exploring, learning and creating software as a default, or primary mode of operation and use case.
