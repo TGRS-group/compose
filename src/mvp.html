@@ -41,8 +41,12 @@
 // To edit the entire script - select the "Whole script" radio button. You can then add new blocks, modify block names, etc. by adding and editing comments of the form <pre>//+ blockName {"type": "html", "target": "default"}</pre> or <pre>//+ blockName {"type": "javascript"}</pre> to the code.
 // </p>
 //+ initializationCode
-function updateTextArea(text) {
+function updateTextArea(text, direction = null) {
   textarea = document.getElementById('editor');
+  textarea.style.direction = 'ltr';
+  if(direction && direction == 'rtl') {
+    textarea.style.direction = 'rtl';
+  }
   textarea.value = text;
   textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
 }
@@ -183,7 +187,7 @@ onSelectBlock = function() {
   }
   select.onchange = function() {
     let blockName = select.value;
-    updateTextArea(editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+    updateTextArea(editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content), blocks[blockName].attributes.direction);
   }
   document.getElementById('store').onclick = storeBlock;
   document.getElementById('execute').onclick = function() {
@@ -198,6 +202,9 @@ var blocks = parseBlocks(document.getElementById('compose').innerHTML);
 for(let [blockName, block] of Object.entries(blocks)) {
   if (block.attributes.type == 'html') {
     target = document.getElementById(block.attributes.target);
+    if (block.attributes.direction == 'rtl') {
+      target.style.direction = 'rtl';
+    }
     target.innerHTML = editableBlockContent(block.attributes.type, block.content);
   }
 }
