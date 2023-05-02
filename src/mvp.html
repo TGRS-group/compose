@@ -13,19 +13,24 @@
 //  <h1>Compose</h1>
 //  <div style="display: flex; flex-direction: row;">
 //  <div style="flex: 1;">
-// <h2>Input</h2>
+// <h2>Code</h2>
 //  <input type="radio" name="mode" value="block" id="block" checked>
 //  <label for="block">Block</label>
-//  <select id="blockNames" style="visibility: hidden;">
-//    <option value="mainHtml">mainHtml</option>
-//  </select>
 //  <input type="radio" name="mode" value="wholeScript" id="whole script">
 //  <label for="whole script">Whole script</label>
+//  <input type="radio" name="mode" value="restore" id="restore">
+//  <label for="restore">Restore from</label>
+//  <br>
+//  <select id="blockNames" style="display: none;"> </select>
+//  <select id="checkpoints" style="display: none;"> </select>
 //  <br>
 //  <textarea id="editor" style="width: 80ch; height: 16ch;"></textarea>
 //  <br>
+//  Label: <input type="text" id="label" value="default">
 //  <button id="store">store</button>
 //  <button id="execute">store and execute</button>
+//  <button id="clearLabel">clear label history</button>
+//  <button id="clearAll">wipe entire history</button>
 //  <br>
 //  </div>
 //  <div style="flex: 1;">
@@ -127,15 +132,29 @@ function stringifyBlocks(blocks) {
   return text;
 }
 
+function store() {
+  let label = document.getElementById('label').value;
+  let timestamp = (new Date()).toISOString().substring(0, 19);
+  let content = stringifyBlocks(blocks);
+  for (let i = 0; i < localStorage.length; i++){
+    if(localStorage.getItem(localStorage.key(i)) == content && localStorage.key(i).startsWith(label)) {
+      return;
+    }
+  }
+  localStorage.setItem(label + ' ' + timestamp, content);
+}
+
 function storeBlock() {
   let blockName = document.getElementById('blockNames').value;
   let blockContent = document.getElementById('editor').value;
   blocks[blockName].content = storableBlockContent(blocks[blockName].attributes.type, blockContent);
+  store();
 }
 
 function storeWholeScript() {
   let updated_script = document.getElementById('editor').value;
   blocks = parseBlocks(updated_script);
+  store();
 }
 
 function execute() {
@@ -169,9 +188,12 @@ function execute() {
 }
 
 onSelectWholeScript = function() {
-  document.getElementById('blockNames').style.visibility = 'hidden';
+  document.getElementById('checkpoints').style.display = 'none';
+  document.getElementById('blockNames').style.display = 'none';
   updateTextArea(stringifyBlocks(blocks));
-  document.getElementById('store').onclick = storeWholeScript;
+  document.getElementById('store').onclick = function() {
+    storeWholeScript();
+  }
   document.getElementById('execute').onclick = function() {
     storeWholeScript();
     execute();
@@ -179,10 +201,11 @@ onSelectWholeScript = function() {
 }
 
 onSelectBlock = function() {
+  document.getElementById('checkpoints').style.display = 'none';
   let blockNames = Object.keys(blocks);
   let select = document.getElementById('blockNames');
   select.options.length = 0;
-  select.style.visibility = 'visible';
+  select.style.display = 'block';
   for(const blockName of Object.keys(blocks)) {
     let option = document.createElement('option');
     option.value = blockName;
@@ -193,12 +216,41 @@ onSelectBlock = function() {
     let blockName = select.value;
     updateTextArea(editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content), blocks[blockName].attributes.direction);
   }
-  document.getElementById('store').onclick = storeBlock;
+  document.getElementById('store').onclick = function() {
+    storeBlock();
+  }
   document.getElementById('execute').onclick = function() {
     storeBlock();
     execute();
   }
   updateTextArea(editableBlockContent(blocks[blockNames[0]].attributes.type, blocks[blockNames[0]].content));
+}
+
+onRestore = function() {
+  document.getElementById('blockNames').style.display = 'none';
+  let select = document.getElementById('checkpoints');
+  select.options.length = 0;
+  select.style.display = 'block';
+  for(let key of Object.keys(localStorage)) {
+    let option = document.createElement('option');
+    option.value = key;
+    option.innerHTML = key;
+    select.appendChild(option);
+  }
+  select.onchange = function() {
+    let label = select.value;
+    let content = localStorage.getItem(label);
+    blocks = parseBlocks(content);
+    updateTextArea(stringifyBlocks(blocks));
+  }
+  document.getElementById('store').onclick = function() {
+    storeWholeScript();
+  }
+  document.getElementById('execute').onclick = function() {
+    storeWholeScript();
+    execute();
+  }
+  updateTextArea(stringifyBlocks(blocks));
 }
 
 var blocks = parseBlocks(document.getElementById('compose').innerHTML);
@@ -224,9 +276,23 @@ if(document.getElementById('whole script').checked) {
 else if(document.getElementById('block').checked) {
   onSelectBlock();
 }
+else if(document.getElementById('restore').checked) {
+  onRestore();
+}
 
 document.getElementById('whole script').onclick = onSelectWholeScript;
 document.getElementById('block').onclick = onSelectBlock;
+document.getElementById('restore').onclick = onRestore;
+document.getElementById('clearAll').onclick = () => { localStorage.clear(); };
+document.getElementById('clearLabel').onclick = () => {
+  let label = document.getElementById('label').value;
+  for (key of Object.keys(localStorage)) {
+    if(key.startsWith(label+" ")) {
+      localStorage.removeItem(key);
+    }
+  }
+};
+
 initialized = true;
 
 //+ specificSetup
