@@ -37,9 +37,12 @@
 //  <p>A tool for executing JavaScript (JS) code in the browser.<br>
 //  Enter any JS code on the left panel, click "update and store" to execute.
 // <p> To edit this text or alter the entire page layout - select "mainHtml" in the block selector.<br>
+// To edit the style - select "style" in the block selector.<br>
 // To edit the initialization code - select "initializationCode" in the block selector.<br>
-// To edit the entire script - select the "Whole script" radio button. You can then add new blocks, modify block names, etc. by adding and editing comments of the form <pre>//+ &lt;yourBlockName&gt; {"type": &lt;"html"|"javascript"&gt;, "target": &lt;yourTargetHtmlId&gt; [, "direction": "rtl"]}</pre> to the code.
+// To edit the entire script - select the "Whole script" radio button. You can then add new blocks, modify block names, etc. by adding and editing comments of the form <pre>//+ &lt;yourBlockName&gt; {"type": &lt;"html"|"css"|"javascript"&gt;, "target": &lt;yourTargetHtmlId&gt; [, "direction": "rtl"]}</pre> to the code.
 // </p>
+//+ style {"type": "css"}
+//
 //+ initializationCode
 function updateTextArea(text, direction = null) {
   textarea = document.getElementById('editor');
@@ -136,6 +139,7 @@ function storeWholeScript() {
 }
 
 function execute() {
+  Array.from(document.head.getElementsByTagName('style')).forEach(element => element.remove());
   currentScript = document.getElementById('compose').innerHTML;
   newScript = stringifyBlocks(blocks);
   document.body.innerHTML = '<div id="default"></div>';
@@ -206,6 +210,11 @@ for(let [blockName, block] of Object.entries(blocks)) {
       target.style.direction = 'rtl';
     }
     target.innerHTML = editableBlockContent(block.attributes.type, block.content);
+  }
+  if (block.attributes.type == 'css') {
+    let style = document.createElement('style');
+    style.innerHTML = editableBlockContent(block.attributes.type, block.content);
+    document.head.appendChild(style);
   }
 }
 
