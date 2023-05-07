@@ -29,6 +29,7 @@
 //  Label: <input type="text" id="label" value="default">
 //  <button id="store">store</button>
 //  <button id="execute">store and execute</button>
+//  <br>
 //  <button id="clearLabel">clear label history</button>
 //  <button id="clearAll">wipe entire history</button>
 //  <br>
@@ -256,28 +257,24 @@ onRestore = function() {
 var blocks = parseBlocks(document.getElementById('compose').innerHTML);
 
 for(let [blockName, block] of Object.entries(blocks)) {
-  if (block.attributes.type == 'html') {
-    target = document.getElementById(block.attributes.target);
-    if (block.attributes.direction == 'rtl') {
-      target.style.direction = 'rtl';
-    }
-    target.innerHTML = editableBlockContent(block.attributes.type, block.content);
-  }
-  if (block.attributes.type == 'css') {
-    let style = document.createElement('style');
-    style.innerHTML = editableBlockContent(block.attributes.type, block.content);
-    document.head.appendChild(style);
+  switch(block.attributes.type) {
+    case 'html':
+      let target = document.getElementById(block.attributes.target);
+      if (block.attributes.direction == 'rtl') {
+        target.style.direction = 'rtl';
+      }
+      target.innerHTML = editableBlockContent(block.attributes.type, block.content);
+      break;
+    case 'css':
+      let style = document.createElement('style');
+      style.innerHTML = editableBlockContent(block.attributes.type, block.content);
+      document.head.appendChild(style);
+      break;
   }
 }
 
-if(document.getElementById('whole script').checked) {
-  onSelectWholeScript();
-}
-else if(document.getElementById('block').checked) {
+if(document.getElementById('block').checked) {
   onSelectBlock();
-}
-else if(document.getElementById('restore').checked) {
-  onRestore();
 }
 
 document.getElementById('whole script').onclick = onSelectWholeScript;

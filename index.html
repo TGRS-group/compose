@@ -4,23 +4,31 @@ Compose is a concept that transforms the modern web browser intended use on its 
 Instead of treating the browser as a piece of software used for consuming, reading, viewing and interacting with online content, it uses a small HTML (+Javascript) code to expose the browser engine and convert it into a computation engine and creation tool for digital documents.
 
 <h2>Components</h2>
-The Compose repository contains different .html files each providing a unique platform for interacting with the browser and composing digital content, or demonstrating different applications of the concept. Currently, three such files are available:
+The Compose repository contains different .html files each providing a unique platform for interacting with the browser and composing digital content, or demonstrating different applications of the concept. Currently, two such files are available:
 <dl>
   <dt><a href="https://tgrs-group.github.io/compose/src/minimal_poc.html">minimal_poc.html</a></dt>
   <dd>The most bare bones embodiment of the compose concept. In less than 20 lines of html+javascript code the user (composer) can access and interact with the raw browser engine to recreate the current page.</dd>
   <dt><a href="https://tgrs-group.github.io/compose/src/mvp.html">mvp.html</a></dt>
   <dd>A Minimal Viable Product (MVP) version that includes:
 <ul>
-  <li>The notion of dividing the content into blocks. The user can either edit the entire content, or a specific block</li>
-  <li>Support for javascript, html, or css block types</li>
-  <li>Specifying block-level attributes (like target element for html blocks)</li>
-  <li>Separating storing the content from executing it</li>
   <li>Reasonable error resilience and reporting upon execution</li>
-  <li>Dividing the page into input and output panes</li>
-  <li>Defining convenience function for setting the output pane content</li>
+  <li>Content separation into blocks. The user can either edit the entire content, or a specific block
+  <ul>
+    <li>Support for javascript, html, or css block types</li>
+    <li>Block-level attributes, including target element id and RTL content editing/display for html blocks</li>
+  </ul>
+  </li>
+  <li>History tracking through the browser's local storage
+  <ul>
+    <li>Labelling of content</li>
+    <li>Storing the current content without execution</li>
+    <li>Restoring content by label and timestamp</li>
+    <li>Deletion of content by label, or clearance of all stored content</li>
+  </ul>
+  </li>
+  <li>Side by side code and output panes</li>
+  <li>Convenience function for setting the output pane content</li>
   <li>Sensible startup defaults (block editing mode, set to a blank javascript block)</li>
-  <li>RTL content (html blocks) editing through block-level attributes</li>
-  <li>History tracking</li>
 </ul>
 </dd>
 </dl>
@@ -43,6 +51,6 @@ Compose is an attempt to reincarnate the vision of personal computers as tools f
 There are many popular browser-centered (literate) programming environments. Some examples include Jupyter, observableHQ, codepen, and others. Albeit seemingly offering similar functionality to Compose, these products have a very different philosophy. They give the user a managed sandbox/environment to write code and generate documents conforming to a pre-defined template. For example - The user cannot (from within the environment) change the structure/layout of the document, they cannot tweak the product to support RTL text input, implement keyboard shortcuts, or get a service-independent, standalone copy of their created content that they can share with peers. The different core philosophy of Compose allows its users to get a control level that is only limited by the capabilities of their browser and their own imagination, without requiring any external software installations or tools except for the browser itself.
 
 <h2>Who we are</h2>
-Compose is currently developed by Prof. Boaz Katz and Dr. Uri Barenholz from the TGRS group in the Weizmann institute of science. We encourage other individuals to join and take part in its development.
+Compose is currently developed by Dr. Uri Barenholz and Prof. Boaz Katz from the TGRS group in the Weizmann institute of science. We encourage other individuals to join and take part in its development.
 
 We hope you find Compose useful and fun to play with, and would love seeing a community evolve around it, sharing different creations, demos, and utilities it facilitates composing.
