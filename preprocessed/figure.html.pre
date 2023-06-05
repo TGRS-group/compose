@@ -1,0 +1,21 @@
+changequote(, )
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Compose-figure</title>
+</head>
+<body>
+<div id="default"></div>
+
+<script id="compose">
+include(mvp_mainHtml.js)
+include(figure_outputHtml.js)
+include(mvp_style.js)
+include(mvp_initializatinCode.js)
+include(figure_functions.js)
+include(mvp_specificSetup.js)
+</script>
+</body>
+</html>
