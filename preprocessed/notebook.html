@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Compose-figure</title>
+</head>
+<body>
+<div id="default"></div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script id="compose">
+//+ mainHtml {"type": "html", "target": "default"}
+//  <h1>Compose notebook</h1>
+//  <div id="notebook_content">
+//  </div>
+//  <div style="display: flex; flex-direction: row;">
+//  <div style="flex: 1;">
+// <h2>Code</h2>
+//  </div>
+//  <div style="flex: 1;">
+// <h2>Output</h2>
+//  </div>
+//  </div>
+//  <div style="display: flex; flex-direction: row;">
+//  <div style="flex: 1;">
+// <fieldset>
+//  <legend>Edit</legend>
+//  <input type="radio" name="mode" value="block" id="block" checked>
+//  <label for="block">Block</label>
+//  <input type="radio" name="mode" value="wholeScript" id="whole script">
+//  <label for="whole script">Whole script</label>
+//  <input type="radio" name="mode" value="restore" id="restore">
+//  <label for="restore">Restore from</label>
+//  <br>
+//  <select id="blockNames" style="display: none;"> </select>
+//  <select id="checkpoints" style="display: none;"> </select>
+// </fieldset>
+//  <textarea id="editor" style="height: 16ch; width: 100%; box-sizing: border-box;"></textarea>
+// <div style="display: flex; flex-direction: row;">
+// <div style="flex: 1; display: flex;">
+// <fieldset>
+//  <legend>Storage</legend>
+//  <button id="store">store</button>
+//  <button id="clearLabel">clear label history</button>
+//  <button id="clearAll">wipe entire history</button>
+//  <br>
+//  Label: <input type="text" id="label" value="default" style="margin: 5px;">
+//  </fieldset>
+//  </div>
+//  <div style="flex: 1;">
+// <fieldset style="height: 100%;">
+//  <legend>Execution</legend>
+//  <button id="execute" style="float: right;">store and execute</button>
+// </fieldset>
+// </div>
+//  </div>
+//  </div>
+//  <div style="flex: 1; position: relative;">
+//  <fieldset id="outputPanel" style="position: absolute; height: auto; bottom: 0; top: 0; margin-top: 0.5em;display: flex; flex-grow: 1; flex-direction: column;">
+// </fieldset>
+//  </div>
+//  </div>
+// <br>
+//  <p>A tool for executing JavaScript (JS) code in the browser.<br>
+//  Enter any JS code on the left panel, click "update and store" to execute.
+// <p> To edit this text or alter the entire page layout - select "mainHtml" in the block selector.<br>
+// To edit the style - select "style" in the block selector.<br>
+// To edit the initialization code - select "initializationCode" in the block selector.<br>
+// To edit the entire script - select the "Whole script" radio button. You can then add new blocks, modify block names, etc. by adding and editing comments of the form <pre>//+ &lt;yourBlockName&gt; {"type": &lt;"html"|"css"|"javascript"&gt;, "target": &lt;yourTargetHtmlId&gt; [, "direction": "rtl"]}</pre> to the code.
+// </p>
+
+
+//+ outputHtml {"type": "html", "target": "outputPanel"}
+// <div id="output"></div>
+// <svg id="svgOutput" width="100%" height="100%" style="flex-grow: 1; transform: scaleY(-1);" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+// </svg>
+
+//+ style {"type": "css"}
+// fieldset {padding: 5px; width: 100%; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc;}
+// textarea {padding: 5px; width: 100%; box-sizing: border-box;}
+
+//+ initializationCode
+// textarea.cell_body {height: expression(this.scrollHeight + "px");}
+function updateTextArea(text, direction = null) {
+  textarea = document.getElementById('editor');
+  textarea.style.direction = 'ltr';
+  if(direction && direction == 'rtl') {
+    textarea.style.direction = 'rtl';
+  }
+  textarea.value = text;
+  textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
+}
+
+
+function updateScript(text) {
+  let script = document.createElement('script');
+  script.id = 'compose';
+  let scriptText = document.createTextNode(text);
+  script.appendChild(scriptText);
+  document.body.appendChild(script);
+}
+
+function editableBlockContent(type, storableContent) {
+  if(type == 'javascript')
+    return storableContent;
+  let lines = storableContent.split('\n');
+  let result = '';
+  for(const line of lines) {
+    if(line.match(/^\/\//)) {
+      result += line.substring(2) + '\n';
+    }
+  }
+  return result;
+}
+
+function storableBlockContent(type, editableContent) {
+  if(type == 'javascript') {
+    return editableContent;
+  }
+  let lines = editableContent.split('\n');
+  let result = '';
+  for(const line of lines) {
+    result += '//' + line + '\n';
+  }
+  return result;
+}
+
+function parseHeader(line) {
+  if(!line.trim().match(/^\/\/\+[ ]*[a-zA-Z0-9_]+/))
+    return null;
+  let blockName = line.match(/[a-zA-Z0-9_]+/)[0];
+  let blockAttributes = JSON.parse((line.match(/\{.*\}/) || ['{"type": "javascript"}'])[0]);
+  return { "name": blockName, "attributes": blockAttributes };
+}
+
+function trimScript(text) {
+  text = text.split('\/\/--BEGIN');
+  text = text[text.length - 1].split('\/\/--END')[0];
+  return text.trim();
+}
+
+function parseBlocks(text) {
+  var blocks = {};
+  var lines = trimScript(text).split('\n');
+  var blockName = '';
+  for(const line of lines) {
+    header = parseHeader(line);
+    if(header) {
+      blocks[header.name] = { "attributes": header.attributes, "content": ''};
+      blockName = header.name;
+      continue;
+    }
+    blocks[blockName].content += line + '\n';
+  }
+  return blocks;
+}
+
+function stringifyBlocks(blocks) {
+  var text = '';
+  for(const blockName of Object.keys(blocks)) {
+    text += '//+ ' + blockName + JSON.stringify(blocks[blockName].attributes) + '\n';
+    text += blocks[blockName].content;
+  }
+  return text;
+}
+
+function store() {
+  let label = document.getElementById('label').value;
+  let timestamp = (new Date()).toISOString().substring(0, 19);
+  let content = stringifyBlocks(blocks);
+  for (let i = 0; i < localStorage.length; i++){
+    if(localStorage.getItem(localStorage.key(i)) == content && localStorage.key(i).startsWith(label)) {
+      return;
+    }
+  }
+  localStorage.setItem(label + ' ' + timestamp, content);
+}
+
+function storeBlock() {
+  let blockName = document.getElementById('blockNames').value;
+  let blockContent = document.getElementById('editor').value;
+  blocks[blockName].content = storableBlockContent(blocks[blockName].attributes.type, blockContent);
+  store();
+}
+
+function storeWholeScript() {
+  let updated_script = document.getElementById('editor').value;
+  blocks = parseBlocks(updated_script);
+  store();
+}
+
+function execute() {
+  Array.from(document.head.getElementsByTagName('style')).forEach(element => element.remove());
+  currentScript = document.getElementById('compose').innerHTML;
+  newScript = stringifyBlocks(blocks);
+  document.body.innerHTML = '<div id="default"></div>';
+  try{
+    new Function(newScript); // check if the script is valid
+    updateScript(`
+      try { initialized = false;
+      \/\/--BEGIN
+      ${newScript}
+      \/\/--END
+       } catch(e) {
+         alert('Error while executing updated script\\n'+ e);
+         if(! initialized) {
+           document.getElementById('compose').remove();
+           let script = document.createElement('script');
+           script.id = 'compose';
+           let scriptText = document.createTextNode(currentScript);
+           script.appendChild(scriptText);
+           document.body.appendChild(script);
+         }
+       }
+    `);
+  } catch(e) {
+    alert('Updated script is not valid\n'+ e);
+    updateScript(trimScript(currentScript));
+  }
+}
+
+onSelectWholeScript = function() {
+  document.getElementById('checkpoints').style.display = 'none';
+  document.getElementById('blockNames').style.display = 'none';
+  updateTextArea(stringifyBlocks(blocks));
+  document.getElementById('store').onclick = function() {
+    storeWholeScript();
+  }
+  document.getElementById('execute').onclick = function() {
+    storeWholeScript();
+    execute();
+  }
+}
+
+onSelectBlock = function() {
+  document.getElementById('checkpoints').style.display = 'none';
+  let blockNames = Object.keys(blocks);
+  let select = document.getElementById('blockNames');
+  select.options.length = 0;
+  select.style.display = 'block';
+  for(const blockName of Object.keys(blocks)) {
+    let option = document.createElement('option');
+    option.value = blockName;
+    option.innerHTML = blockName;
+    select.appendChild(option);
+  }
+  select.onchange = function() {
+    let blockName = select.value;
+    updateTextArea(editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content), blocks[blockName].attributes.direction);
+  }
+  document.getElementById('store').onclick = function() {
+    storeBlock();
+  }
+  document.getElementById('execute').onclick = function() {
+    storeBlock();
+    execute();
+  }
+  updateTextArea(editableBlockContent(blocks[blockNames[0]].attributes.type, blocks[blockNames[0]].content));
+}
+
+onRestore = function() {
+  document.getElementById('blockNames').style.display = 'none';
+  let select = document.getElementById('checkpoints');
+  select.options.length = 0;
+  select.style.display = 'block';
+  for(let key of Object.keys(localStorage)) {
+    let option = document.createElement('option');
+    option.value = key;
+    option.innerHTML = key;
+    select.appendChild(option);
+  }
+  select.onchange = function() {
+    let label = select.value;
+    let content = localStorage.getItem(label);
+    blocks = parseBlocks(content);
+    updateTextArea(stringifyBlocks(blocks));
+  }
+  document.getElementById('store').onclick = function() {
+    storeWholeScript();
+  }
+  document.getElementById('execute').onclick = function() {
+    storeWholeScript();
+    execute();
+  }
+  updateTextArea(stringifyBlocks(blocks));
+}
+
+var blocks = parseBlocks(document.getElementById('compose').innerHTML);
+
+for(let [blockName, block] of Object.entries(blocks)) {
+  switch(block.attributes.type) {
+    case 'html':
+      let target = document.getElementById(block.attributes.target);
+      if (block.attributes.direction == 'rtl') {
+        target.style.direction = 'rtl';
+      }
+      target.innerHTML = editableBlockContent(block.attributes.type, block.content);
+      break;
+    case 'css':
+      let style = document.createElement('style');
+      style.innerHTML = editableBlockContent(block.attributes.type, block.content);
+      document.head.appendChild(style);
+      break;
+  }
+}
+
+if(document.getElementById('block').checked) {
+  onSelectBlock();
+}
+
+document.getElementById('whole script').onclick = onSelectWholeScript;
+document.getElementById('block').onclick = onSelectBlock;
+document.getElementById('restore').onclick = onRestore;
+document.getElementById('clearAll').onclick = () => { localStorage.clear(); };
+document.getElementById('clearLabel').onclick = () => {
+  let label = document.getElementById('label').value;
+  for (key of Object.keys(localStorage)) {
+    if(key.startsWith(label+" ")) {
+      localStorage.removeItem(key);
+    }
+  }
+};
+
+initialized = true;
+
+
+//+ figureFunctions
+function Rect(x,y,width,height,strokeWidth) {
+  rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+  rect.setAttribute("x",x);
+  rect.setAttribute("y",y);
+  rect.setAttribute("width",width);
+  rect.setAttribute("height",height);
+  rect.setAttribute("fill","none");
+  rect.setAttribute("stroke","black");
+  rect.setAttribute("stroke-width",strokeWidth || "1");
+  document.getElementById("svgOutput").appendChild(rect);
+  return rect;
+}
+
+function Circle(cx,cy,r) {
+  circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  circle.setAttribute("cx",cx);
+  circle.setAttribute("cy",cy);
+  circle.setAttribute("r",r);
+  circle.setAttribute("fill","none");
+  circle.setAttribute("stroke","black");
+  document.getElementById("svgOutput").appendChild(circle);
+  return circle;
+}
+
+function Line(x1,y1,x2,y2) {
+  line = document.createElementNS("http://www.w3.org/2000/svg","line");
+  line.setAttribute("x1",x1);
+  line.setAttribute("y1",y1);
+  line.setAttribute("x2",x2);
+  line.setAttribute("y2",y2);
+  line.setAttribute("stroke","black");
+  document.getElementById("svgOutput").appendChild(line);
+  return line;
+}
+
+function xlim(xmin,width) {
+  ymin = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[1];
+  height = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[3];
+  document.getElementById("svgOutput").setAttribute("viewBox",xmin+" "+ymin+" "+width+" "+height);
+}
+
+function ylim(ymin,height) {
+  xmin = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[0];
+  width = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[2];
+  document.getElementById("svgOutput").setAttribute("viewBox",xmin+" "+ymin+" "+width+" "+height);
+}
+
+//+ notebookSetup
+function displayContentFromEditableContent(type, editableContent) {
+  let displayedContent = editableContent;
+  switch(type) {
+    case 'markdown':
+      displayedContent = marked.parse(editableContent);
+      break;
+    case 'javascript':
+      displayedContent = "<pre><code>" + editableContent + "</code></pre>";
+      break;
+  }
+  return displayedContent;
+}
+
+createCellBody = function(mode, attributes, editableContent) {
+  switch(mode) {
+    case 'edit':
+      cellBody = document.createElement('textarea');
+      cellBody.value = editableContent;
+      break;
+    case 'view':
+      cellBody = document.createElement('div');
+      cellBody.innerHTML = displayContentFromEditableContent(attributes.type, editableContent);
+      break;
+  }
+  cellBody.className = 'cell_body';
+  if(attributes.direction && attributes.direction == 'rtl') {
+    cellBody.style.direction = 'rtl';
+  }
+  return cellBody;
+}
+
+function getCellMode(cell) {
+  return cell.getElementsByClassName('mode_selector')[0].value;
+}
+
+function setCellContent(cell, type, attributes, editableContent) {
+  if (cell.getElementsByClassName('cell_body').length > 0) {
+    cell.removeChild(cell.getElementsByClassName('cell_body')[0]);
+  }
+  let mode = getCellMode(cell);
+  let cellBody = createCellBody(mode, attributes, editableContent);
+  cell.appendChild(cellBody);
+  if(mode == 'edit') {
+    cellBody.style.height = '1px';
+    cellBody.style.height = (cellBody.scrollHeight+5) + 'px';
+  }
+}
+
+function setHeaderMode(cell) {
+  let cellHeader = cell.getElementsByClassName('cell_header')[0];
+  let mode = getCellMode(cellHeader.parentElement);
+  updateButton = cellHeader.getElementsByClassName('update_button')[0];
+  if (mode == 'edit') {
+    updateButton.style.display = 'inline';
+    if(cellHeader.getElementsByClassName('direction_selector').length > 0) {
+      cellHeader.getElementsByClassName('direction_selector')[0].style.display = 'inline';
+    }
+  } else {
+    if(cellHeader.getElementsByClassName('direction_selector').length > 0) {
+      cellHeader.getElementsByClassName('direction_selector')[0].style.display = 'none';
+    }
+    updateButton.style.display = 'none';
+  }
+}
+
+function appendCell(blockName, contentAttributes, cellContent) {
+  let cell = document.createElement('div');
+  cell.className = 'cell';
+  cell.style.border = '1px solid black';
+
+  let cellHeader = document.createElement('div');
+  cellHeader.className = 'cell_header';
+  // add mode selector
+  let modeSelector = document.createElement('select');
+  modeSelector.className = 'mode_selector';
+  let modes = ['view', 'edit'];
+  for(let mode of modes) {
+    let option = document.createElement('option');
+    option.value = mode;
+    option.innerHTML = mode;
+    modeSelector.appendChild(option);
+  }
+  modeSelector.onchange = function() {
+    setHeaderMode(cell);
+    setCellContent(cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+  }
+
+  cellHeader.appendChild(modeSelector);
+
+  let updateButton = document.createElement('button');
+  updateButton.className = 'update_button';
+  updateButton.innerHTML = 'update';
+  updateButton.onclick = function() {
+    let editableContent = cell.getElementsByClassName('cell_body')[0].value;
+    blocks[blockName].content = storableBlockContent(blocks[blockName].attributes.type, editableContent);
+    store();
+  }
+  cellHeader.appendChild(updateButton);
+
+  // if content type is markdown, add right-to-left  vs left-to-right selector
+  if(contentAttributes.type == 'markdown') {
+    let directionSelector = document.createElement('select');
+    directionSelector.className = 'direction_selector';
+    let directions = ['ltr', 'rtl'];
+    for(let direction of directions) {
+      let option = document.createElement('option');
+      option.value = direction;
+      option.innerHTML = direction;
+      directionSelector.appendChild(option);
+    }
+    directionSelector.onchange = function() {
+      contentAttributes.direction = directionSelector.value;
+      setCellContent(cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+    }
+    cellHeader.appendChild(directionSelector);
+  }
+
+  let cellTypeSpan = document.createElement('span');
+  cellTypeSpan.className = 'cell_type';
+  cellTypeSpan.innerHTML = contentAttributes.type;
+  cellHeader.appendChild(cellTypeSpan);
+  cell.appendChild(cellHeader);
+  setHeaderMode(cell);
+  setCellContent(cell, contentAttributes.type, contentAttributes, cellContent);
+  document.getElementById('notebook_content').appendChild(cell);
+}
+
+function renderCellsFromBlocks() {
+  for(let [blockName, block] of Object.entries(blocks)) {
+    appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
+  }
+}
+
+//+ markdowntest {"type": "markdown"}
+// # Markdown test
+//+ specificSetup
+function setOutput(text) {
+  document.getElementById("output").innerHTML=text;
+}
+
+function print(text) {
+  document.getElementById("output").innerHTML += text;
+}
+
+if("computeCode" in blocks) {
+  document.getElementById("blockNames").value = "computeCode";
+  document.getElementById("blockNames").onchange();
+}
+
+//+ Todo
+// cells should have mode (edit, view, hidden)
+// cells should have a button to change mode
+// cells should have a type selector
+// cells should have a button to store and execute
+// cells should have a button to move up
+// cells should have a button to move down
+// cells should have a button to delete
+// cells should have a button to insert above
+// cells should have a button to insert below
+// cells should have a button to duplicate
+
+//+ computeCode
+// enter code here
+// call setOutput(text) to print output on the output panel
+renderCellsFromBlocks();
+</script>
+</body>
+</html>
