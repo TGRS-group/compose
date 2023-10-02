@@ -11,7 +11,7 @@
 
 <script id="compose">
 //+ _mainHtml {"type": "html", "target": "default"}
-//  <h1>Compose notebook</h1>
+//  <h1>Compose notebook </h1>
 //  Label: <input type="text" id="label" value="default" style="margin: 5px;">
 //  <input type="checkbox" id="show_hidden_cells">Show hidden cells</checkbox>
 // <button onclick="{store();execute()}">Execute</button>
@@ -359,24 +359,19 @@ createCellBody = function(mode, attributes, editableContent) {
   return cellBody;
 }
 
-function getCellMode(cell) {
-  return cell.getElementsByClassName('mode_selector')[0].value;
-}
-
 function appendCellOutput(cell) {
   let output = document.createElement('div');
   output.className = 'output';
   cell.appendChild(output);
 }
 
-function setCellContent(cell, type, attributes, editableContent) {
+function setCellContent(mode, cell, type, attributes, editableContent) {
   if (cell.getElementsByClassName('cell_body').length > 0) {
     cell.removeChild(cell.getElementsByClassName('cell_body')[0]);
   }
   if (cell.getElementsByClassName('output').length > 0 && attributes.type != "javascript") {
     cell.removeChild(cell.getElementsByClassName('output')[0]);
   }
-  let mode = getCellMode(cell);
   let cellBody = createCellBody(mode, attributes, editableContent);
   cell.appendChild(cellBody);
   if(mode == 'edit') {
@@ -395,9 +390,8 @@ function setCellContent(cell, type, attributes, editableContent) {
   }
 }
 
-function setHeaderMode(cell) {
+function setHeaderMode(mode, cell) {
   let cellHeader = cell.getElementsByClassName('cell_header')[0];
-  let mode = getCellMode(cellHeader.parentElement);
   updateButton = cellHeader.getElementsByClassName('update_button')[0];
   typeSelector = cellHeader.getElementsByClassName('type_selector')[0];
   if (mode == 'edit') {
@@ -432,16 +426,29 @@ function appendCell(blockName, contentAttributes, cellContent) {
 
   let cellHeader = document.createElement('div');
   cellHeader.className = 'cell_header';
-  // add mode selector
-  let modeSelector = document.createElement('select');
-  modeSelector.className = 'mode_selector';
-  let modes = ['view', 'edit'];
-  for(let mode of modes) {
-    let option = document.createElement('option');
-    option.value = mode;
-    option.innerHTML = mode;
-    modeSelector.appendChild(option);
+  let editButton = document.createElement('button');
+  editButton.className = 'edit_button';
+  editButton.innerHTML = '&#9998';
+  let viewButton = document.createElement('button');
+  viewButton.className = 'view_button';
+  viewButton.innerHTML = '&#x1f441';
+  cellHeader.appendChild(editButton);
+  cellHeader.appendChild(viewButton);
+  editButton.onclick = function() {
+    let cell = editButton.parentElement.parentElement;
+    setHeaderMode('edit', cell);
+    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+    editButton.style.display = 'none';
+    viewButton.style.display = 'inline';
   }
+  viewButton.onclick = function() {
+    let cell = viewButton.parentElement.parentElement;
+    setHeaderMode('view', cell);
+    setCellContent('view', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+    editButton.style.display = 'inline';
+    viewButton.style.display = 'none';
+  }
+  viewButton.style.display = 'none';
   let typeSelector = document.createElement('select');
   typeSelector.className = 'type_selector';
   let types = ['markdown', 'javascript'];
@@ -458,15 +465,11 @@ function appendCell(blockName, contentAttributes, cellContent) {
     contentAttributes.type = typeSelector.value;
     blocks[blockName].attributes.type = typeSelector.value;
     updateBlockContentFromCellContent(blockName, cell.getElementsByClassName('cell_body')[0].value);
-    setCellContent(cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+    setHeaderMode('edit', cell);
+    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
   }
   document.getElementById('notebook_content').appendChild(cell);
-  modeSelector.onchange = function() {
-    setHeaderMode(cell);
-    setCellContent(cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
-  }
 
-  cellHeader.appendChild(modeSelector);
   cellHeader.appendChild(typeSelector);
 
   let updateButton = document.createElement('button');
@@ -492,14 +495,14 @@ function appendCell(blockName, contentAttributes, cellContent) {
     }
     directionSelector.onchange = function() {
       contentAttributes.direction = directionSelector.value;
-      setCellContent(cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+      setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
     }
     cellHeader.appendChild(directionSelector);
   }
 
   cell.appendChild(cellHeader);
-  setHeaderMode(cell);
-  setCellContent(cell, contentAttributes.type, contentAttributes, cellContent);
+  setHeaderMode('view', cell);
+  setCellContent('view', cell, contentAttributes.type, contentAttributes, cellContent);
   if(blockName.startsWith('_') && document.getElementById('show_hidden_cells').checked == false) {
     cell.style.display = 'none';
   }
