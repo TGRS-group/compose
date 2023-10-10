@@ -27,6 +27,11 @@
 //+ _style {"type": "css"}
 // fieldset {padding: 5px; width: 100%; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc;}
 // textarea {padding: 5px; width: 100%; box-sizing: border-box;}
+// .cell_seperator {opacity: 0; color: #ccc;}
+// .cell_seperator:hover {opacity: 1; color: #ccc;}
+// .cell {border: 1px solid #ddd;}
+// .cell:hover {background-color: #eee; border: 1px solid #ccc;}
+// .cell:hover + .cell_seperator {opacity: 1; color: #ccc;}
 
 //+ _initializationCode
 // textarea.cell_body {height: expression(this.scrollHeight + "px");}
@@ -422,7 +427,6 @@ function appendCell(blockName, contentAttributes, cellContent) {
   let cell = document.createElement('div');
   cell.className = 'cell';
   cell.id = blockName;
-  cell.style.border = '1px solid black';
 
   let cellHeader = document.createElement('div');
   cellHeader.className = 'cell_header';
@@ -505,10 +509,35 @@ function appendCell(blockName, contentAttributes, cellContent) {
   setCellContent('view', cell, contentAttributes.type, contentAttributes, cellContent);
   if(blockName.startsWith('_') && document.getElementById('show_hidden_cells').checked == false) {
     cell.style.display = 'none';
+  } else {
+    appendCellSeperator();
   }
+}
+function appendCellSeperator() {
+  let seperator = document.createElement('div');
+  seperator.className = 'cell_seperator';
+  let add = document.createElement('button');
+  add.innerHTML = '&#x2795';
+  seperator.appendChild(add);
+  add.onclick = function() {
+    let i = 0;
+    while(blocks["cell_"+i] != undefined) {
+      i++;
+    }
+    let blockName = "cell_"+i;
+    blocks[blockName] = {
+      attributes: {
+        type: 'javascript',
+      },
+      content: storableBlockContent('javascript', '\/\/ '+i+'\n\n')
+    };
+    appendCell(blockName, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+  }
+  document.getElementById('notebook_content').appendChild(seperator);
 }
 
 function renderCellsFromBlocks() {
+  appendCellSeperator();
   for(let [blockName, block] of Object.entries(blocks)) {
     appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
   }
@@ -537,8 +566,6 @@ document.getElementById('show_hidden_cells').onchange = function() {
   }
 }
 // cells should have mode (edit, view, hidden)
-// cells should have a type selector
-// cells should have a button to store and execute
 // cells should have a button to move up
 // cells should have a button to move down
 // cells should have a button to delete
