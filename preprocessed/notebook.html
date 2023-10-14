@@ -423,7 +423,7 @@ function updateBlockContentFromCellContent(blockName, cellContent) {
   blocks[blockName].content = storableBlockContent(type, blockContent);
 }
 
-function appendCell(blockName, contentAttributes, cellContent) {
+function createCell(blockName, contentAttributes, cellContent) {
   let cell = document.createElement('div');
   cell.className = 'cell';
   cell.id = blockName;
@@ -472,7 +472,6 @@ function appendCell(blockName, contentAttributes, cellContent) {
     setHeaderMode('edit', cell);
     setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
   }
-  document.getElementById('notebook_content').appendChild(cell);
 
   cellHeader.appendChild(typeSelector);
 
@@ -506,40 +505,75 @@ function appendCell(blockName, contentAttributes, cellContent) {
 
   cell.appendChild(cellHeader);
   setHeaderMode('view', cell);
+  return cell;
+
+}
+
+function appendCell(blockName, contentAttributes, cellContent) {
+  let cell = createCell(blockName, contentAttributes, cellContent);
+
+  document.getElementById('notebook_content').appendChild(cell);
   setCellContent('view', cell, contentAttributes.type, contentAttributes, cellContent);
+
   if(blockName.startsWith('_') && document.getElementById('show_hidden_cells').checked == false) {
     cell.style.display = 'none';
   } else {
     appendCellSeperator();
   }
 }
-function appendCellSeperator() {
+
+function insertCell(seperator, blockName, attributes, cellContent)
+{
+  let cell = createCell(blockName, attributes, cellContent);
+  seperator.parentElement.insertBefore(cell, seperator);
+  setCellContent('view', cell, attributes.type, attributes, cellContent);
+}
+
+function generateBlockName() {
+  let i = 0;
+  while(blocks["cell_"+i] != undefined) {
+    i++;
+  }
+  return "cell_"+i;
+}
+
+function createSeperator() {
   let seperator = document.createElement('div');
-  seperator.className = 'cell_seperator';
+  seperator.className = 'seperator';
   let add = document.createElement('button');
   add.innerHTML = '&#x2795';
   seperator.appendChild(add);
   add.onclick = function() {
-    let i = 0;
-    while(blocks["cell_"+i] != undefined) {
-      i++;
-    }
-    let blockName = "cell_"+i;
+    let blockName = generateBlockName();
     blocks[blockName] = {
       attributes: {
         type: 'javascript',
       },
-      content: storableBlockContent('javascript', '\/\/ '+i+'\n\n')
+      content: storableBlockContent('javascript', '\/\/ '+blockName+'\n\n')
     };
-    appendCell(blockName, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+    insertSeperator(seperator);
+    insertCell(seperator, blockName, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
   }
+  return seperator;
+}
+
+function insertSeperator(caller) {
+  let seperator = createSeperator();
+  caller.parentElement.insertBefore(seperator, caller);
+}
+
+function appendCellSeperator() {
+  let seperator = createSeperator();
   document.getElementById('notebook_content').appendChild(seperator);
 }
+
+cellNames = [];
 
 function renderCellsFromBlocks() {
   appendCellSeperator();
   for(let [blockName, block] of Object.entries(blocks)) {
     appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
+    cellNames.push(blockName);
   }
 }
 
