@@ -399,18 +399,16 @@ function setHeaderMode(mode, cell) {
   let cellHeader = cell.getElementsByClassName('cell_header')[0];
   updateButton = cellHeader.getElementsByClassName('update_button')[0];
   typeSelector = cellHeader.getElementsByClassName('type_selector')[0];
+  directionSelector = cellHeader.getElementsByClassName('direction_selector')[0];
+  directionSelector.style.display = 'none';
+  updateButton.style.display = 'none';
+  typeSelector.style.display = 'none';
   if (mode == 'edit') {
     updateButton.style.display = 'inline';
     typeSelector.style.display = 'inline';
-    if(cellHeader.getElementsByClassName('direction_selector').length > 0) {
-      cellHeader.getElementsByClassName('direction_selector')[0].style.display = 'inline';
+    if(blocks[cell.id].attributes && blocks[cell.id].attributes.type &&  blocks[cell.id].attributes.type == 'markdown') {
+      directionSelector.style.display = 'inline';
     }
-  } else {
-    if(cellHeader.getElementsByClassName('direction_selector').length > 0) {
-      cellHeader.getElementsByClassName('direction_selector')[0].style.display = 'none';
-    }
-    updateButton.style.display = 'none';
-    typeSelector.style.display = 'none';
   }
 }
 
@@ -484,7 +482,6 @@ function createCellHeader(contentAttributes) {
   cellHeader.appendChild(updateButton);
 
   // if content type is markdown, add right-to-left  vs left-to-right selector
-  if(contentAttributes.type == 'markdown') {
     let directionSelector = document.createElement('select');
     directionSelector.className = 'direction_selector';
     let directions = ['ltr', 'rtl'];
@@ -500,6 +497,8 @@ function createCellHeader(contentAttributes) {
       setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
     }
     cellHeader.appendChild(directionSelector);
+  if(contentAttributes.type != 'markdown') {
+    directionSelector.style.display = 'none';
   }
   return cellHeader;
 }
