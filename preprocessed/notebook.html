@@ -447,6 +447,20 @@ function createCellHeader(contentAttributes) {
     viewButton.style.display = 'none';
   }
   viewButton.style.display = 'none';
+  let deleteButton = document.createElement('button');
+  deleteButton.className = 'delete_button';
+  deleteButton.innerHTML = '&#128465';
+  deleteButton.onclick = function() {
+    let cell = deleteButton.parentElement.parentElement;
+    let seperator = cell.nextElementSibling;
+    let blockName = cell.id;
+    delete blocks[blockName];
+    cell.parentElement.removeChild(cell);
+    if(seperator && seperator.className == 'seperator') {
+      seperator.parentElement.removeChild(seperator);
+    }
+  }
+  cellHeader.appendChild(deleteButton);
   let typeSelector = document.createElement('select');
   typeSelector.className = 'type_selector';
   let types = ['markdown', 'javascript'];
