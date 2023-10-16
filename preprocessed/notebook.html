@@ -14,7 +14,7 @@
 //  <h1>Compose notebook </h1>
 //  Label: <input type="text" id="label" value="default" style="margin: 5px;">
 //  <input type="checkbox" id="show_hidden_cells">Show hidden cells</checkbox>
-// <button onclick="{store();execute()}">Execute</button>
+// <button onclick="{storeCellsAsBlocks();execute()}">Execute</button>
 //  <div id="notebook_content">
 //  </div>
 //  <div id="outputPanel">
@@ -423,11 +423,7 @@ function updateBlockContentFromCellContent(blockName, cellContent) {
   blocks[blockName].content = storableBlockContent(type, blockContent);
 }
 
-function createCell(blockName, contentAttributes, cellContent) {
-  let cell = document.createElement('div');
-  cell.className = 'cell';
-  cell.id = blockName;
-
+function createCellHeader(contentAttributes) {
   let cellHeader = document.createElement('div');
   cellHeader.className = 'cell_header';
   let editButton = document.createElement('button');
@@ -441,14 +437,14 @@ function createCell(blockName, contentAttributes, cellContent) {
   editButton.onclick = function() {
     let cell = editButton.parentElement.parentElement;
     setHeaderMode('edit', cell);
-    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
     editButton.style.display = 'none';
     viewButton.style.display = 'inline';
   }
   viewButton.onclick = function() {
     let cell = viewButton.parentElement.parentElement;
     setHeaderMode('view', cell);
-    setCellContent('view', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+    setCellContent('view', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
     editButton.style.display = 'inline';
     viewButton.style.display = 'none';
   }
@@ -466,11 +462,12 @@ function createCell(blockName, contentAttributes, cellContent) {
   typeSelector.onchange = function() {
     //let fromType = contentAttributes.type;
     // convert content of block and cell to new type
+    let cell = typeSelector.parentElement.parentElement;
     contentAttributes.type = typeSelector.value;
-    blocks[blockName].attributes.type = typeSelector.value;
-    updateBlockContentFromCellContent(blockName, cell.getElementsByClassName('cell_body')[0].value);
+    blocks[cell.id].attributes.type = typeSelector.value;
+    updateBlockContentFromCellContent(cell.id, cell.getElementsByClassName('cell_body')[0].value);
     setHeaderMode('edit', cell);
-    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
   }
 
   cellHeader.appendChild(typeSelector);
@@ -479,8 +476,9 @@ function createCell(blockName, contentAttributes, cellContent) {
   updateButton.className = 'update_button';
   updateButton.innerHTML = 'update';
   updateButton.onclick = function() {
+    let cell = updateButton.parentElement.parentElement;
     let editableContent = cell.getElementsByClassName('cell_body')[0].value;
-    updateBlockContentFromCellContent(blockName, editableContent);
+    updateBlockContentFromCellContent(cell.id, editableContent);
     store();
   }
   cellHeader.appendChild(updateButton);
@@ -497,16 +495,23 @@ function createCell(blockName, contentAttributes, cellContent) {
       directionSelector.appendChild(option);
     }
     directionSelector.onchange = function() {
+      let cell = directionSelector.parentElement.parentElement;
       contentAttributes.direction = directionSelector.value;
-      setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[blockName].content));
+      setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
     }
     cellHeader.appendChild(directionSelector);
   }
+  return cellHeader;
+}
 
+function createCell(blockName, contentAttributes, cellContent) {
+  let cell = document.createElement('div');
+  cell.className = 'cell';
+  cell.id = blockName;
+  let cellHeader = createCellHeader(contentAttributes);
   cell.appendChild(cellHeader);
   setHeaderMode('view', cell);
   return cell;
-
 }
 
 function appendCell(blockName, contentAttributes, cellContent) {
@@ -525,6 +530,16 @@ function appendCell(blockName, contentAttributes, cellContent) {
 function insertCell(seperator, blockName, attributes, cellContent)
 {
   let cell = createCell(blockName, attributes, cellContent);
+  /* 
+  let precedingCell = seperator.previousElementSibling;
+  while (precedingCell != null && precedingCell.className != 'cell') {
+    precedingCell = precedingCell.previousElementSibling;
+  }
+  if (precedingCell != null) {
+    let precedingCellName = precedingCell.id;
+    cellNames.splice(cellNames.indexOf(precedingCellName)+1, 0, blockName);
+
+  }*/
   seperator.parentElement.insertBefore(cell, seperator);
   setCellContent('view', cell, attributes.type, attributes, cellContent);
 }
@@ -537,13 +552,11 @@ function generateBlockName() {
   return "cell_"+i;
 }
 
-function createSeperator() {
-  let seperator = document.createElement('div');
-  seperator.className = 'seperator';
-  let add = document.createElement('button');
-  add.innerHTML = '&#x2795';
-  seperator.appendChild(add);
-  add.onclick = function() {
+function createAddCellButton(parent) {
+  let addCellButton = document.createElement('button');
+  addCellButton.className = 'add_cell_button';
+  addCellButton.innerHTML = '&#x2795';
+  addCellButton.onclick = function() {
     let blockName = generateBlockName();
     blocks[blockName] = {
       attributes: {
@@ -551,9 +564,17 @@ function createSeperator() {
       },
       content: storableBlockContent('javascript', '\/\/ '+blockName+'\n\n')
     };
-    insertSeperator(seperator);
-    insertCell(seperator, blockName, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+    insertSeperator(parent);
+    insertCell(parent, blockName, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
   }
+  return addCellButton;
+}
+
+function createSeperator() {
+  let seperator = document.createElement('div');
+  seperator.className = 'seperator';
+  let add = createAddCellButton(seperator);
+  seperator.appendChild(add);
   return seperator;
 }
 
@@ -567,15 +588,30 @@ function appendCellSeperator() {
   document.getElementById('notebook_content').appendChild(seperator);
 }
 
-cellNames = [];
+// cellNames = [];
 
 function renderCellsFromBlocks() {
   appendCellSeperator();
   for(let [blockName, block] of Object.entries(blocks)) {
     appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
-    cellNames.push(blockName);
+    // cellNames.push(blockName);
   }
 }
+
+function storeCellsAsBlocks() {
+  let cells = document.getElementsByClassName('cell');
+  let updatedBlocks = {};
+  for(let cell of cells) {
+    let blockName = cell.id;
+    let contentAttributes = blocks[blockName].attributes;
+    updatedBlocks[blockName] = {
+      attributes: contentAttributes,
+      content: blocks[blockName].content,
+    };
+  }
+  blocks = updatedBlocks;
+}
+
 
 //+ _specificSetup
 function setOutput(text) {
