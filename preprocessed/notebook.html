@@ -377,8 +377,9 @@ function setCellContent(mode, cell, type, attributes, editableContent) {
   if (cell.getElementsByClassName('output').length > 0 && attributes.type != "javascript") {
     cell.removeChild(cell.getElementsByClassName('output')[0]);
   }
+  let cellOutput = cell.getElementsByClassName('output')[0];
   let cellBody = createCellBody(mode, attributes, editableContent);
-  cell.appendChild(cellBody);
+  cell.insertBefore(cellBody, cellOutput);
   if(mode == 'edit') {
     cellBody.style.height = '1px';
     cellBody.style.height = (cellBody.scrollHeight+5) + 'px';
@@ -387,7 +388,7 @@ function setCellContent(mode, cell, type, attributes, editableContent) {
     appendCellOutput(cell);
   }
   if(mode == 'edit' && attributes.type == "javascript") {
-     getCellOutput(cell.id).style.display = 'none';
+     // getCellOutput(cell.id).style.display = 'none';
   }
   if(mode == 'view' && attributes.type == "javascript") {
      getCellOutput(cell.id).style.display = 'block';
@@ -400,7 +401,9 @@ function setHeaderMode(mode, cell) {
   updateButton = cellHeader.getElementsByClassName('update_button')[0];
   typeSelector = cellHeader.getElementsByClassName('type_selector')[0];
   directionSelector = cellHeader.getElementsByClassName('direction_selector')[0];
+  let executeButton = cellHeader.getElementsByClassName('execute_button')[0];
   directionSelector.style.display = 'none';
+  executeButton.style.display = 'none';
   updateButton.style.display = 'none';
   typeSelector.style.display = 'none';
   if (mode == 'edit') {
@@ -408,6 +411,9 @@ function setHeaderMode(mode, cell) {
     typeSelector.style.display = 'inline';
     if(blocks[cell.id].attributes && blocks[cell.id].attributes.type &&  blocks[cell.id].attributes.type == 'markdown') {
       directionSelector.style.display = 'inline';
+    }
+    if(blocks[cell.id].attributes && blocks[cell.id].attributes.type &&  blocks[cell.id].attributes.type == 'javascript') {
+      executeButton.style.display = 'inline';
     }
   }
 }
@@ -419,6 +425,12 @@ function updateBlockContentFromCellContent(blockName, cellContent) {
     blockContent = javascriptBlockContentFromCellContent(blockName, cellContent);
   }
   blocks[blockName].content = storableBlockContent(type, blockContent);
+}
+
+function updateCell(cell) {
+  let editableContent = cell.getElementsByClassName('cell_body')[0].value;
+  updateBlockContentFromCellContent(cell.id, editableContent);
+  store();
 }
 
 function createCellHeader(contentAttributes) {
@@ -441,6 +453,7 @@ function createCellHeader(contentAttributes) {
   }
   viewButton.onclick = function() {
     let cell = viewButton.parentElement.parentElement;
+    updateCell(cell);
     setHeaderMode('view', cell);
     setCellContent('view', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
     editButton.style.display = 'inline';
@@ -461,6 +474,31 @@ function createCellHeader(contentAttributes) {
     }
   }
   cellHeader.appendChild(deleteButton);
+
+  let updateButton = document.createElement('button');
+  updateButton.className = 'update_button';
+  updateButton.innerHTML = '<u>&#8595</u>';
+  updateButton.onclick = function() {
+    let cell = updateButton.parentElement.parentElement;
+    updateCell(cell);
+  }
+  cellHeader.appendChild(updateButton);
+
+  let executionButton = document.createElement('button');
+  executionButton.className = 'execute_button';
+  executionButton.innerHTML = '&#9654';
+  executionButton.onclick = function() {
+    let cell = executionButton.parentElement.parentElement;
+    if(blocks[cell.id].attributes && blocks[cell.id].attributes.type != 'javascript') {
+      return;
+    }
+    updateCell(cell);
+    let output = getCellOutput(cell.id);
+    output.innerHTML = '';
+    new Function(blocks[cell.id].content)();
+  }
+  cellHeader.appendChild(executionButton);
+
   let typeSelector = document.createElement('select');
   typeSelector.className = 'type_selector';
   let types = ['markdown', 'javascript'];
@@ -481,38 +519,29 @@ function createCellHeader(contentAttributes) {
     setHeaderMode('edit', cell);
     setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
   }
-
   cellHeader.appendChild(typeSelector);
 
-  let updateButton = document.createElement('button');
-  updateButton.className = 'update_button';
-  updateButton.innerHTML = 'update';
-  updateButton.onclick = function() {
-    let cell = updateButton.parentElement.parentElement;
-    let editableContent = cell.getElementsByClassName('cell_body')[0].value;
-    updateBlockContentFromCellContent(cell.id, editableContent);
-    store();
+  let directionSelector = document.createElement('select');
+  directionSelector.className = 'direction_selector';
+  let directions = ['ltr', 'rtl'];
+  for(let direction of directions) {
+    let option = document.createElement('option');
+    option.value = direction;
+    option.innerHTML = direction;
+    directionSelector.appendChild(option);
   }
-  cellHeader.appendChild(updateButton);
+  directionSelector.onchange = function() {
+    let cell = directionSelector.parentElement.parentElement;
+    contentAttributes.direction = directionSelector.value;
+    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
+  }
+  cellHeader.appendChild(directionSelector);
 
-  // if content type is markdown, add right-to-left  vs left-to-right selector
-    let directionSelector = document.createElement('select');
-    directionSelector.className = 'direction_selector';
-    let directions = ['ltr', 'rtl'];
-    for(let direction of directions) {
-      let option = document.createElement('option');
-      option.value = direction;
-      option.innerHTML = direction;
-      directionSelector.appendChild(option);
-    }
-    directionSelector.onchange = function() {
-      let cell = directionSelector.parentElement.parentElement;
-      contentAttributes.direction = directionSelector.value;
-      setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
-    }
-    cellHeader.appendChild(directionSelector);
   if(contentAttributes.type != 'markdown') {
     directionSelector.style.display = 'none';
+  }
+  if(contentAttributes.type != 'javascript') {
+    executionButton.style.display = 'none';
   }
   return cellHeader;
 }
