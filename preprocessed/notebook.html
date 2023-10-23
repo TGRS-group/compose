@@ -15,6 +15,7 @@
 //  Label: <input type="text" id="label" value="default" style="margin: 5px;">
 //  <input type="checkbox" id="show_hidden_cells">Show hidden cells</checkbox>
 // <button onclick="{storeCellsAsBlocks();execute()}">Execute</button>
+// <button onclick="{save()}">Save</button>
 //  <div id="notebook_content">
 //  </div>
 //  <div id="outputPanel">
@@ -35,6 +36,12 @@
 
 //+ _initializationCode
 // textarea.cell_body {height: expression(this.scrollHeight + "px");}
+var dirty = false;
+if(typeof(shouldSave) !== 'undefined' && shouldSave) {
+  save();
+  shouldSave = false;
+}
+
 function updateTextArea(text, direction = null) {
   textarea = document.getElementById('editor');
   textarea.style.direction = 'ltr';
@@ -135,6 +142,7 @@ function storeBlock() {
   let blockContent = document.getElementById('editor').value;
   blocks[blockName].content = storableBlockContent(blocks[blockName].attributes.type, blockContent);
   store();
+  dirty = true;
 }
 
 function storeWholeScript() {
@@ -425,6 +433,7 @@ function updateBlockContentFromCellContent(blockName, cellContent) {
     blockContent = javascriptBlockContentFromCellContent(blockName, cellContent);
   }
   blocks[blockName].content = storableBlockContent(type, blockContent);
+  dirty = true;
 }
 
 function updateCell(cell) {
@@ -652,6 +661,7 @@ function storeCellsAsBlocks() {
     };
   }
   blocks = updatedBlocks;
+  dirty = true;
 }
 
 
@@ -662,6 +672,19 @@ function setOutput(text) {
 
 function print(text) {
   document.getElementById("output").innerHTML += text;
+}
+function save() {
+  if(dirty) {
+    alert("Entire notebook must be executed before saving.");
+    return;
+ }
+ // shouldSave = true;
+ const data = "<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+ const link = document.createElement('a');
+ link.setAttribute('download', 'notebook.html');
+ link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+ link.style.display = 'none';
+ link.click();
 }
 
 //+ _initialize
