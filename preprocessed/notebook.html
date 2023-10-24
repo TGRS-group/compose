@@ -12,7 +12,7 @@
 <script id="compose">
 //+ _mainHtml {"type": "html", "target": "default"}
 //  <h1>Compose notebook </h1>
-//  Label: <input type="text" id="label" value="default" style="margin: 5px;">
+//  Notebook name: <input type="text" id="label" value="Untitled" style="margin: 5px;">
 //  <input type="checkbox" id="show_hidden_cells">Show hidden cells</checkbox>
 // <button onclick="{storeCellsAsBlocks();execute()}" title="Run all cells">&#9193</button>
 // <button onclick="{save()}" title="Download">&#128190</button>
@@ -541,7 +541,7 @@ function createCellHeader(contentAttributes) {
   let ltr = document.createElement('button');
   ltr.className = 'ltr_button';
   ltr.innerHTML = '&para;&#x20ef';
-  ltr.title = 'Left to right';
+  ltr.title = 'Set text direction to left-to-right';
   ltr.onclick = function() {
     this.style.borderStyle = 'inset';
     rtl.style.borderStyle = 'outset';
@@ -553,7 +553,7 @@ function createCellHeader(contentAttributes) {
   let rtl = document.createElement('button');
   rtl.className = 'rtl_button';
   rtl.innerHTML = '&para;&#x20ee';
-  rtl.title = 'Right to left';
+  rtl.title = 'Set text direction to right-to-left';
   rtl.onclick = function() {
     this.style.borderStyle = 'inset';
     ltr.style.borderStyle = 'outset';
@@ -697,10 +697,12 @@ function save() {
     alert("Entire notebook must be executed before saving.");
     return;
  }
+
+ let label = document.getElementById('label').value;
  // shouldSave = true;
  const data = "<!DOCTYPE html>\n"+document.documentElement.outerHTML;
  const link = document.createElement('a');
- link.setAttribute('download', 'notebook.html');
+ link.setAttribute('download', label+'.html');
  link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
  link.style.display = 'none';
  link.click();
@@ -708,6 +710,12 @@ function save() {
 
 //+ _initialize
 renderCellsFromBlocks();
+let label = document.getElementById('label').value;
+document.title = label;
+document.getElementById('label').onchange = function() {
+  document.title = document.getElementById('label').value;
+}
+
 document.getElementById('show_hidden_cells').onchange = function() {
   for(let cell of document.getElementsByClassName('cell')) {
     if(cell.id.startsWith('_')) {
