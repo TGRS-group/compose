@@ -408,9 +408,11 @@ function setHeaderMode(mode, cell) {
   let cellHeader = cell.getElementsByClassName('cell_header')[0];
   updateButton = cellHeader.getElementsByClassName('update_button')[0];
   typeSelector = cellHeader.getElementsByClassName('type_selector')[0];
-  directionSelector = cellHeader.getElementsByClassName('direction_selector')[0];
+  ltrButton = cellHeader.getElementsByClassName('ltr_button')[0];
+  rtlButton = cellHeader.getElementsByClassName('rtl_button')[0];
   let executeButton = cellHeader.getElementsByClassName('execute_button')[0];
-  directionSelector.style.display = 'none';
+  ltrButton.style.display = 'none';
+  rtlButton.style.display = 'none';
   executeButton.style.display = 'none';
   updateButton.style.display = 'none';
   typeSelector.style.display = 'none';
@@ -418,7 +420,8 @@ function setHeaderMode(mode, cell) {
     updateButton.style.display = 'inline';
     typeSelector.style.display = 'inline';
     if(blocks[cell.id].attributes && blocks[cell.id].attributes.type &&  blocks[cell.id].attributes.type == 'markdown') {
-      directionSelector.style.display = 'inline';
+      ltrButton.style.display = 'inline';
+      rtlButton.style.display = 'inline';
     }
     if(blocks[cell.id].attributes && blocks[cell.id].attributes.type &&  blocks[cell.id].attributes.type == 'javascript') {
       executeButton.style.display = 'inline';
@@ -535,24 +538,34 @@ function createCellHeader(contentAttributes) {
   }
   cellHeader.appendChild(typeSelector);
 
-  let directionSelector = document.createElement('select');
-  directionSelector.className = 'direction_selector';
-  let directions = ['ltr', 'rtl'];
-  for(let direction of directions) {
-    let option = document.createElement('option');
-    option.value = direction;
-    option.innerHTML = direction;
-    directionSelector.appendChild(option);
-  }
-  directionSelector.onchange = function() {
-    let cell = directionSelector.parentElement.parentElement;
-    contentAttributes.direction = directionSelector.value;
+  let ltr = document.createElement('button');
+  ltr.className = 'ltr_button';
+  ltr.innerHTML = '&para;&#x20ef';
+  ltr.title = 'Left to right';
+  ltr.onclick = function() {
+    this.style.borderStyle = 'inset';
+    rtl.style.borderStyle = 'outset';
+    let cell = ltr.parentElement.parentElement;
+    contentAttributes.direction = 'ltr';
     setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
   }
-  cellHeader.appendChild(directionSelector);
+  cellHeader.appendChild(ltr);
+  let rtl = document.createElement('button');
+  rtl.className = 'rtl_button';
+  rtl.innerHTML = '&para;&#x20ee';
+  rtl.title = 'Right to left';
+  rtl.onclick = function() {
+    this.style.borderStyle = 'inset';
+    ltr.style.borderStyle = 'outset';
+    let cell = rtl.parentElement.parentElement;
+    contentAttributes.direction = 'rtl';
+    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
+  }
+  cellHeader.appendChild(rtl);
 
   if(contentAttributes.type != 'markdown') {
-    directionSelector.style.display = 'none';
+    ltr.style.display = 'none';
+    rtl.style.display = 'none';
   }
   if(contentAttributes.type != 'javascript') {
     executionButton.style.display = 'none';
