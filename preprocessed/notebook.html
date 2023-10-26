@@ -5,6 +5,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
   <title>Compose-notebook</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
 </head>
 <body>
 <div id="default"></div>
@@ -14,8 +15,8 @@
 // <h3>Compose notebook </h3>
 //  <input type="text" id="label" value="Untitled" style="margin: 5px;font-size:18pt;" title="Rename">
 //  <input type="checkbox" id="show_hidden_cells">Show hidden cells</checkbox>
-// <button onclick="{storeCellsAsBlocks();execute()}" title="Run all cells">&#9193</button>
-// <button onclick="{save()}" title="Download">&#128190</button>
+// <button onclick="{storeCellsAsBlocks();execute()}" title="Run all cells" class="material-symbols-outlined" style="font-size: 1em">fast_forward</button>
+// <button onclick="{save()}" title="Download" class="material-symbols-outlined" style="font-size: 1em">save</button>
 //  <div id="notebook_content">
 //  </div>
 //  <div id="outputPanel">
@@ -26,13 +27,13 @@
 // </svg>
 
 //+ _style {"type": "css"}
-// fieldset {padding: 5px; width: 100%; box-sizing: border-box; border-radius: 5px; border: 1px solid #ccc;}
 // textarea {padding: 5px; width: 100%; box-sizing: border-box;}
 // .cell_seperator {opacity: 0; color: #ccc;}
 // .cell_seperator:hover {opacity: 1; color: #ccc;}
 // .cell {border: 1px solid #ddd;}
 // .cell:hover {background-color: #eee; border: 1px solid #ccc;}
 // .cell:hover + .cell_seperator {opacity: 1; color: #ccc;}
+// body {font-family: Arial, sans-serif;}
 
 //+ _initializationCode
 // textarea.cell_body {height: expression(this.scrollHeight + "px");}
@@ -450,11 +451,15 @@ function createCellHeader(contentAttributes) {
   cellHeader.className = 'cell_header';
   let editButton = document.createElement('button');
   editButton.className = 'edit_button';
-  editButton.innerHTML = '&#9998';
+  editButton.classList.add('material-symbols-outlined');
+  editButton.style.fontSize = '1em';
+  editButton.innerHTML = 'edit';
   editButton.title = 'Edit cell content';
   let viewButton = document.createElement('button');
   viewButton.className = 'view_button';
-  viewButton.innerHTML = '&#x1f441';
+  viewButton.classList.add('material-symbols-outlined');
+  viewButton.style.fontSize = '1em';
+  viewButton.innerHTML = 'visibility';
   viewButton.title = 'View';
   cellHeader.appendChild(editButton);
   cellHeader.appendChild(viewButton);
@@ -476,7 +481,9 @@ function createCellHeader(contentAttributes) {
   viewButton.style.display = 'none';
   let deleteButton = document.createElement('button');
   deleteButton.className = 'delete_button';
-  deleteButton.innerHTML = '&#128465';
+  deleteButton.classList.add('material-symbols-outlined');
+  deleteButton.style.fontSize = '1em';
+  deleteButton.innerHTML = 'delete';
   deleteButton.title = 'Delete cell';
   deleteButton.onclick = function() {
     let cell = deleteButton.parentElement.parentElement;
@@ -492,7 +499,9 @@ function createCellHeader(contentAttributes) {
 
   let updateButton = document.createElement('button');
   updateButton.className = 'update_button';
-  updateButton.innerHTML = '<u>&#8595</u>';
+  updateButton.classList.add('material-symbols-outlined');
+  updateButton.style.fontSize = '1em';
+  updateButton.innerHTML = 'download';
   updateButton.title = 'Update cell content';
   updateButton.onclick = function() {
     let cell = updateButton.parentElement.parentElement;
@@ -502,7 +511,9 @@ function createCellHeader(contentAttributes) {
 
   let executionButton = document.createElement('button');
   executionButton.className = 'execute_button';
-  executionButton.innerHTML = '&#9654';
+  executionButton.classList.add('material-symbols-outlined');
+  executionButton.style.fontSize = '1em';
+  executionButton.innerHTML = 'play_arrow';
   executionButton.title = 'Execute cell';
   executionButton.onclick = function() {
     let cell = executionButton.parentElement.parentElement;
@@ -537,11 +548,14 @@ function createCellHeader(contentAttributes) {
     setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
   }
   cellHeader.appendChild(typeSelector);
-
   let ltr = document.createElement('button');
   ltr.className = 'ltr_button';
-  ltr.innerHTML = '&para;&#x20ef';
   ltr.title = 'Set text direction to left-to-right';
+  ltr.classList.add('material-symbols-outlined');
+  ltr.style.fontSize = '1em';
+  ltr.innerHTML = 'format_textdirection_l_to_r';
+
+
   ltr.onclick = function() {
     this.style.borderStyle = 'inset';
     rtl.style.borderStyle = 'outset';
@@ -552,8 +566,10 @@ function createCellHeader(contentAttributes) {
   cellHeader.appendChild(ltr);
   let rtl = document.createElement('button');
   rtl.className = 'rtl_button';
-  rtl.innerHTML = '&para;&#x20ee';
   rtl.title = 'Set text direction to right-to-left';
+  rtl.classList.add('material-symbols-outlined');
+  rtl.style.fontSize = '1em';
+  rtl.innerHTML = 'format_textdirection_r_to_l';
   rtl.onclick = function() {
     this.style.borderStyle = 'inset';
     ltr.style.borderStyle = 'outset';
@@ -624,7 +640,9 @@ function generateBlockName() {
 function createAddCellButton(parent) {
   let addCellButton = document.createElement('button');
   addCellButton.className = 'add_cell_button';
-  addCellButton.innerHTML = '&#x2795';
+  addCellButton.classList.add('material-symbols-outlined');
+  addCellButton.style.fontSize = '1em';
+  addCellButton.innerHTML = 'add';
   addCellButton.title = 'Insert new cell';
   addCellButton.onclick = function() {
     let blockName = generateBlockName();
