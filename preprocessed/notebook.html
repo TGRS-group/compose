@@ -336,23 +336,27 @@ function javascriptBlockContentToCellEditableContent(cellContent) {
   return cellContent.split("\n").slice(1,-2).join("\n");
 }
 
-function cellViewedContentFromEditableBlockContent(type, editableContent) {
-  let displayedContent = editableContent;
-  switch(type) {
-    case 'markdown':
-      displayedContent = marked.parse(editableContent);
-      break;
-    case 'javascript':
-      displayedContent = "<pre><code>" + javascriptBlockContentToCellEditableContent(editableContent) + "</code></pre>";
-      break;
-    case 'css':
-    displayedContent = "<pre><i><code>CSS</code></i></pre>";
-      break;
-    case 'html':
-      displayedContent = "<pre><i><code>HTML</code></i></pre>";
-      break;
+function blockType(blockName) {
+  if (blocks[blockName].attributes && blocks[blockName].attributes.type) {
+    return blocks[blockName].attributes.type;
   }
-  return displayedContent;
+  return 'javascript';
+}
+
+function cellViewedContent(blockName) {
+ switch(blockType(blockName)) {
+   case 'javascript':
+     return `<pre><code><i>${blockName}: ${JSON.stringify(blocks[blockName].attributes)}</i></code></pre>`;
+    case 'markdown':
+      return marked.parse(editableBlockContent(blockType(blockName), blocks[blockName].content));
+    case 'html':
+      if(blocks[blockName].attributes.target && blocks[blockName].attributes.target != blockName+'_output') {
+        return `<pre><code><i>${blockName}: ${JSON.stringify(blocks[blockName].attributes)}</i></code></pre>`;
+      }
+      return editableBlockContent(blockType(blockName), blocks[blockName].content);
+    case 'css':
+      return `<pre><code><i>${blockName}: ${JSON.stringify(blocks[blockName].attributes)}</i></code></pre>`;
+  }
 }
 
 function cellEditableContentFromBlockEditableContent(type, editableContent) {
@@ -365,7 +369,7 @@ function cellEditableContentFromBlockEditableContent(type, editableContent) {
   return cellEditableContent;
 }
 
-createCellBody = function(mode, attributes, editableContent) {
+createCellBody = function(mode, attributes, editableContent, blockName) {
   switch(mode) {
     case 'edit':
       cellBody = document.createElement('textarea');
@@ -373,7 +377,7 @@ createCellBody = function(mode, attributes, editableContent) {
       break;
     case 'view':
       cellBody = document.createElement('div');
-      cellBody.innerHTML = cellViewedContentFromEditableBlockContent(attributes.type, editableContent);
+      cellBody.innerHTML = cellViewedContent(blockName);
       break;
   }
   cellBody.className = 'cell_body';
@@ -398,7 +402,7 @@ function setCellContent(mode, cell, type, attributes, editableContent) {
     cell.removeChild(cell.getElementsByClassName('output')[0]);
   }
   let cellOutput = cell.getElementsByClassName('output')[0];
-  let cellBody = createCellBody(mode, attributes, editableContent);
+  let cellBody = createCellBody(mode, attributes, editableContent, cell.id);
   cell.insertBefore(cellBody, cellOutput);
   if(mode == 'edit') {
     cellBody.style.height = '1px';
@@ -406,9 +410,6 @@ function setCellContent(mode, cell, type, attributes, editableContent) {
   }
   if(cell.getElementsByClassName('output').length == 0 && attributes.type == "javascript") {
     appendCellOutput(cell);
-  }
-  if(mode == 'view' && attributes.type == "javascript") {
-     cellBody.style.display = 'none';
   }
 }
 
