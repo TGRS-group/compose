@@ -30,11 +30,8 @@
 
 //+ _style {"type": "css"}
 // textarea {padding: 5px; width: 100%; box-sizing: border-box;}
-// .cell_seperator {opacity: 0; color: #ccc;}
-// .cell_seperator:hover {opacity: 1; color: #ccc;}
 // .cell {border: 1px solid #ddd;}
 // .cell:hover {background-color: #eee; border: 1px solid #ccc;}
-// .cell:hover + .cell_seperator {opacity: 1; color: #ccc;}
 // .material-symbols-outlined {
 //   font-family: 'Material Symbols Outlined';
 //   font-size: 1em;
@@ -348,6 +345,12 @@ function cellViewedContentFromEditableBlockContent(type, editableContent) {
     case 'javascript':
       displayedContent = "<pre><code>" + javascriptBlockContentToCellEditableContent(editableContent) + "</code></pre>";
       break;
+    case 'css':
+    displayedContent = "<pre><i><code>CSS</code></i></pre>";
+      break;
+    case 'html':
+      displayedContent = "<pre><i><code>HTML</code></i></pre>";
+      break;
   }
   return displayedContent;
 }
@@ -383,6 +386,7 @@ createCellBody = function(mode, attributes, editableContent) {
 function appendCellOutput(cell) {
   let output = document.createElement('div');
   output.className = 'output';
+  output.style.display = 'block';
   cell.appendChild(output);
 }
 
@@ -403,11 +407,7 @@ function setCellContent(mode, cell, type, attributes, editableContent) {
   if(cell.getElementsByClassName('output').length == 0 && attributes.type == "javascript") {
     appendCellOutput(cell);
   }
-  if(mode == 'edit' && attributes.type == "javascript") {
-     // getCellOutput(cell.id).style.display = 'none';
-  }
   if(mode == 'view' && attributes.type == "javascript") {
-     getCellOutput(cell.id).style.display = 'block';
      cellBody.style.display = 'none';
   }
 }
@@ -689,13 +689,10 @@ function appendCellSeperator() {
   document.getElementById('notebook_content').appendChild(seperator);
 }
 
-// cellNames = [];
-
 function renderCellsFromBlocks() {
   appendCellSeperator();
   for(let [blockName, block] of Object.entries(blocks)) {
     appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
-    // cellNames.push(blockName);
   }
 }
 
