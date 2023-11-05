@@ -39,6 +39,8 @@
 // textarea {padding: 5px; width: 100%; box-sizing: border-box;}
 // .cell {border: 1px solid #ddd;}
 // .cell:hover {background-color: #eee; border: 1px solid #ccc;}
+// .seperator {display: block;}
+// .hidden {display: none;}
 // .material-symbols-outlined {
 //   font-family: 'Material Symbols Outlined';
 //   font-size: 1em;
@@ -754,6 +756,16 @@ function createCell(blockName, contentAttributes, cellContent) {
   return cell;
 }
 
+function hideCell(cell) {
+  cell.classList.add('hidden');
+  cell.nextElementSibling.classList.add('hidden');
+}
+
+function unhideCell(cell) {
+  cell.classList.remove('hidden');
+  cell.nextElementSibling.classList.remove('hidden');
+}
+
 function appendCell(blockName, contentAttributes, cellContent) {
   let cell = createCell(blockName, contentAttributes, cellContent);
 
@@ -761,12 +773,6 @@ function appendCell(blockName, contentAttributes, cellContent) {
   setCellContent('view', cell, contentAttributes.type, contentAttributes, cellContent);
   if(blockName.startsWith('_') && !(blocks[blockName].attributes.hidden)) {
     blocks[blockName].attributes.hidden = true;
-  }
-
-  if(blocks[blockName].attributes.hidden && blocks[blockName].attributes.hidden == true && document.getElementById('show_hidden_cells').checked == false) {
-    cell.style.display = 'none';
-  } else {
-    appendCellSeperator();
   }
 }
 
@@ -823,7 +829,9 @@ function renderCellsFromBlocks() {
   appendCellSeperator();
   for(let [blockName, block] of Object.entries(blocks)) {
     appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
+    appendCellSeperator();
   }
+  document.getElementById('show_hidden_cells').onchange();
 }
 
 function storeCellsAsBlocks() {
@@ -867,6 +875,15 @@ function save() {
 }
 
 //+ _initialize
+document.getElementById('show_hidden_cells').onchange = function() {
+  let unhide = document.getElementById('show_hidden_cells').checked;
+  for(let cell of document.getElementsByClassName('cell')) {
+    if(blocks[cell.id].attributes.hidden) {
+      unhide ? unhideCell(cell) : hideCell(cell);
+    }
+  }
+}
+
 renderCellsFromBlocks();
 let label = document.getElementById('label').value;
 document.title = label;
@@ -874,17 +891,6 @@ document.getElementById('label').onchange = function() {
   document.title = document.getElementById('label').value;
 }
 
-document.getElementById('show_hidden_cells').onchange = function() {
-  for(let cell of document.getElementsByClassName('cell')) {
-    if(blocks[cell.id].attributes.hidden) {
-      if(document.getElementById('show_hidden_cells').checked) {
-        cell.style.display = 'block';
-      } else {
-        cell.style.display = 'none';
-      }
-    }
-  }
-}
 // cells should have mode (edit, view, hidden)
 // cells should have a button to move up
 // cells should have a button to move down
