@@ -14,11 +14,18 @@
 
 <script id="compose">
 //+ _mainHtml {"type": "html", "target": "default"}
-// <h3>Compose notebook </h3>
-//  <input type="text" id="label" value="Untitled" style="margin: 5px;font-size:18pt;" title="Rename">
-//  <input type="checkbox" id="show_hidden_cells">Show hidden cells</checkbox>
+// <h4>Compose notebook </h4>
+// <div class="input-group">
+//  <input type="text" id="label" value="Untitled" title="Rename">
+// <div class="form-check">
+//  <input class="form-check-input" type="checkbox" value="" id="show_hidden_cells">
+//  <label class="form-check-label" for="show_hidden_cells">
+//  Show hidden cells
+//  </label>
+//  </div>
 // <button onclick="{storeCellsAsBlocks();execute()}" title="Run all cells" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >fast_forward</button>
 // <button onclick="{save()}" title="Download" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >save</button>
+// </div>
 //  <div id="notebook_content">
 //  </div>
 //  <div id="outputPanel">
@@ -612,6 +619,7 @@ function createSettingsList(blockName) {
     let block = blocks[blockName];
     let mode = cell.getElementsByClassName('view_button')[0].style.display == 'none' ? 'view' : 'edit';
     setCellContent(mode, cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+    document.getElementById('show_hidden_cells').onchange();
   }
   settingsList.appendChild(update);
   
@@ -751,8 +759,11 @@ function appendCell(blockName, contentAttributes, cellContent) {
 
   document.getElementById('notebook_content').appendChild(cell);
   setCellContent('view', cell, contentAttributes.type, contentAttributes, cellContent);
+  if(blockName.startsWith('_') && !(blocks[blockName].attributes.hidden)) {
+    blocks[blockName].attributes.hidden = true;
+  }
 
-  if(blockName.startsWith('_') && document.getElementById('show_hidden_cells').checked == false) {
+  if(blocks[blockName].attributes.hidden && blocks[blockName].attributes.hidden == true && document.getElementById('show_hidden_cells').checked == false) {
     cell.style.display = 'none';
   } else {
     appendCellSeperator();
@@ -865,7 +876,7 @@ document.getElementById('label').onchange = function() {
 
 document.getElementById('show_hidden_cells').onchange = function() {
   for(let cell of document.getElementsByClassName('cell')) {
-    if(cell.id.startsWith('_')) {
+    if(blocks[cell.id].attributes.hidden) {
       if(document.getElementById('show_hidden_cells').checked) {
         cell.style.display = 'block';
       } else {
