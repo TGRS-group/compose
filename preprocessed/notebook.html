@@ -332,7 +332,7 @@ function ylim(ymin,height) {
 }
 
 //+ _notebookSetup
-getCellOutput = function(blockName) {
+function getCellOutput(blockName) {
   cell = document.getElementById(blockName);
   return cell.getElementsByClassName('output')[0];
 }
@@ -352,20 +352,20 @@ function blockType(blockName) {
   return 'javascript';
 }
 
-function cellViewedContent(blockName) {
- switch(blockType(blockName)) {
-   case 'javascript':
+function showCellBodyViewContent(blockName) {
+  return  ((!getCellOutput(blockName)) || getCellOutput(blockName).innerHTML == '' ||
+          (blocks[blockName].attributes.target && blocks[blockName].attributes.target != blockName+'_output'));
+}
+
+function cellBodyViewContent(blockName) {
      return `<pre><code><i>${blockName}: ${JSON.stringify(blocks[blockName].attributes)}</i></code></pre>`;
-    case 'markdown':
-      return marked.parse(editableBlockContent(blockType(blockName), blocks[blockName].content));
-    case 'html':
-      if(blocks[blockName].attributes.target && blocks[blockName].attributes.target != blockName+'_output') {
-        return `<pre><code><i>${blockName}: ${JSON.stringify(blocks[blockName].attributes)}</i></code></pre>`;
-      }
-      return editableBlockContent(blockType(blockName), blocks[blockName].content);
-    case 'css':
-      return `<pre><code><i>${blockName}: ${JSON.stringify(blocks[blockName].attributes)}</i></code></pre>`;
+}
+
+function cellViewedContent(blockName) {
+  if(showCellBodyViewContent(blockName)) {
+    return cellBodyViewContent(blockName);
   }
+  return '';
 }
 
 function cellEditableContentFromBlockEditableContent(type, editableContent) {
@@ -378,7 +378,7 @@ function cellEditableContentFromBlockEditableContent(type, editableContent) {
   return cellEditableContent;
 }
 
-createCellBody = function(mode, attributes, editableContent, blockName) {
+function createCellBody(mode, attributes, editableContent, blockName) {
   switch(mode) {
     case 'edit':
       cellBody = document.createElement('textarea');
@@ -397,10 +397,19 @@ createCellBody = function(mode, attributes, editableContent, blockName) {
 }
 
 function appendCellOutput(cell) {
+  let blockName = cell.id;
+  let block = blocks[blockName];
   let output = document.createElement('div');
+  output.id = blockName + '_output';
   output.className = 'output';
   output.style.display = 'block';
   cell.appendChild(output);
+  if(block.attributes.type == "markdown" && block.content != "") {
+    output.innerHTML = marked.parse(editableBlockContent(blockType(blockName), block.content));
+  }
+  if(block.attributes.direction && block.attributes.direction == 'rtl') {
+    output.style.direction = 'rtl';
+  }
 }
 
 function setCellContent(mode, cell, type, attributes, editableContent) {
@@ -410,15 +419,15 @@ function setCellContent(mode, cell, type, attributes, editableContent) {
   if (cell.getElementsByClassName('output').length > 0 && attributes.type != "javascript") {
     cell.removeChild(cell.getElementsByClassName('output')[0]);
   }
+  if(cell.getElementsByClassName('output').length == 0) {
+    appendCellOutput(cell);
+  }
   let cellOutput = cell.getElementsByClassName('output')[0];
   let cellBody = createCellBody(mode, attributes, editableContent, cell.id);
   cell.insertBefore(cellBody, cellOutput);
   if(mode == 'edit') {
     cellBody.style.height = '1px';
     cellBody.style.height = (cellBody.scrollHeight+5) + 'px';
-  }
-  if(cell.getElementsByClassName('output').length == 0 && attributes.type == "javascript") {
-    appendCellOutput(cell);
   }
 }
 
