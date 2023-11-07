@@ -355,30 +355,23 @@ function setCellContent(mode, cell, type, attributes, editableContent) {
 
 function setHeaderMode(mode, cell) {
   let cellHeader = cell.getElementsByClassName('cell_header')[0];
-  updateButton = cellHeader.getElementsByClassName('update_button')[0];
-  typeSelector = cellHeader.getElementsByClassName('type_selector')[0];
-  ltrButton = cellHeader.getElementsByClassName('ltr_button')[0];
-  rtlButton = cellHeader.getElementsByClassName('rtl_button')[0];
+  let ltrButton = cellHeader.getElementsByClassName('ltr_button')[0];
+  let rtlButton = cellHeader.getElementsByClassName('rtl_button')[0];
   let executeButton = cellHeader.getElementsByClassName('execute_button')[0];
-  ltrButton.style.display = 'none';
-  rtlButton.style.display = 'none';
-  executeButton.style.display = 'none';
-  updateButton.style.display = 'none';
-  typeSelector.style.display = 'none';
-  if (mode == 'edit') {
-    updateButton.style.display = 'inline';
-    typeSelector.style.display = 'inline';
-    if(blocks[cell.id].attributes && blocks[cell.id].attributes.type &&  blocks[cell.id].attributes.type == 'markdown') {
-      ltrButton.style.display = 'inline';
-      rtlButton.style.display = 'inline';
-      ltrButton.classList.add('active');
-      if(blocks[cell.id].attributes.direction && blocks[cell.id].attributes.direction == 'rtl') {
-        rtlButton.classList.add('active');
-        ltrButton.classList.remove('active');
-      }
-    }
-    if(blocks[cell.id].attributes && blocks[cell.id].attributes.type &&  blocks[cell.id].attributes.type == 'javascript') {
-      executeButton.style.display = 'inline';
+  for (class_name of ['update_button', 'type_selector']) {
+    let button = cellHeader.getElementsByClassName(class_name)[0];
+    button.classList.toggle('hidden', mode != 'edit');
+  }
+  for (class_name of ['ltr_button', 'rtl_button']) {
+    let button = cellHeader.getElementsByClassName(class_name)[0];
+    button.classList.toggle('hidden', mode != 'edit' || !blocks[cell.id].attributes.type || blocks[cell.id].attributes.type != 'markdown');
+  }
+  executeButton.classList.toggle('hidden', mode != 'edit' || blocks[cell.id].attributes.type != 'javascript');
+  if (mode == 'edit' && blocks[cell.id].attributes.type && blocks[cell.id].attributes.type == 'markdown') {
+    ltrButton.classList.add('active');
+    if(blocks[cell.id].attributes.direction && blocks[cell.id].attributes.direction == 'rtl') {
+      rtlButton.classList.add('active');
+      ltrButton.classList.remove('active');
     }
   }
 }
@@ -404,8 +397,7 @@ function createSymbolButton(symbol, title, buttonClass) {
   const iconButtonClasses = ['btn', 'btn-outline-dark', 'btn-sm', 'material-symbols-outlined'];
 //const iconButtonClasses = ['button', 'is-small', 'is-outlined', 'material-symbols-outlined'];
   let button = document.createElement('button');
-  button.className = buttonClass;
-  button.classList.add(...iconButtonClasses);
+  button.classList.add(buttonClass,...iconButtonClasses);
   button.innerHTML = symbol;
   button.title = title;
   return button;
@@ -420,8 +412,7 @@ const unpopulatedSettings ={
 
 function createStringSettingItem(settingName, value) {
   let settingInput = document.createElement('div');
-  settingInput.className = 'input-group';
-  settingInput.classList.add('input-group-sm');
+  settingInput.classList.add('input-group', 'input-group-sm');
   let settingInputPrepend = document.createElement('span');
   settingInputPrepend.className = 'input-group-text';
   settingInputPrepend.innerHTML = settingName;
@@ -445,15 +436,13 @@ function createBooleanSettingItem(settingName, value) {
   let settingInputLabel = document.createElement('label');
   settingInputLabel.className = 'form-check-label';
   settingInputLabel.innerHTML = settingName;
-  settingInput.appendChild(settingInputLabel);
-  settingInput.appendChild(settingInputCheck);
+  settingInput.append(settingInputLabel, settingInputCheck);
   return settingInput;
 }
 
 function createSelectSettingItem(settingName, values, selecetedValue) {
   let settingInput = document.createElement('div');
-  settingInput.className = 'input-group';
-  settingInput.classList.add('input-group-sm');
+  settingInput.classList.add('input-group', 'input-group-sm');
   let settingInputPrepend = document.createElement('span');
   settingInputPrepend.className = 'input-group-text';
   settingInputPrepend.innerHTML = settingName;
@@ -482,7 +471,7 @@ function createSettingItem(settingName, setting) {
       settingInput = createStringSettingItem(settingName, setting.value);
       break;
     case 'boolean':
-      settingInput = createBooleanSettingItem(settingName);
+      settingInput = createBooleanSettingItem(settingName, setting.value);
       break;
     case 'select':
       settingInput = createSelectSettingItem(settingName, setting.values, setting.value);
@@ -501,6 +490,12 @@ function populateSettings(blockName) {
     }
   }
   populatedSettings['Name'].value = blockName;
+  if(!blocks[blockName].attributes.target) {
+    populatedSettings['Target'].value = blockName+'_output';
+  }
+  if(!blocks[blockName].attributes.hidden) {
+    populatedSettings['Hidden'].value = blockName.startsWith('_');
+  }
   return populatedSettings;
 }
 
@@ -561,21 +556,17 @@ function createSettingsList(blockName) {
 
 function createCellHeader(contentAttributes, blockName) {
   let cellHeader = document.createElement('div');
-  cellHeader.className = 'cell_header';
-  cellHeader.classList.add('btn-toolbar');
+  cellHeader.classList.add('cell_header', 'btn-toolbar');
   let editButton = createSymbolButton('edit', 'Edit cell content', 'edit_button');
   let viewButton = createSymbolButton('visibility', 'View', 'view_button');
   let settingsButton = createSymbolButton('settings', 'Cell settings', 'settings_button');
   settingsButton.classList.add('dropdown-toggle');
   settingsButton.setAttribute('data-bs-toggle', 'dropdown');
   settingsButton.setAttribute('aria-expanded', 'false');
-  cellHeader.appendChild(editButton);
-  cellHeader.appendChild(viewButton);
   let settingsContainer = document.createElement('div');
   settingsContainer.className = 'dropdown';
-  settingsContainer.appendChild(settingsButton);
-  settingsContainer.appendChild(createSettingsList(blockName));
-  cellHeader.appendChild(settingsContainer);
+  settingsContainer.append(settingsButton, createSettingsList(blockName));
+  cellHeader.append(editButton, viewButton, settingsContainer);
   editButton.onclick = function() {
     let cell = editButton.parentElement.parentElement;
     setHeaderMode('edit', cell);
