@@ -28,18 +28,11 @@
 // </div>
 //  <div id="notebook_content">
 //  </div>
-//  <div id="outputPanel">
-//  </div>
-//+ _outputHtml {"type": "html", "target": "outputPanel"}
-// <div id="output"></div>
-// <svg id="svgOutput" width="100%" height="100%" style="flex-grow: 1; transform: scaleY(-1);" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-// </svg>
 
 //+ _style {"type": "css"}
 // textarea {padding: 5px; width: 100%; box-sizing: border-box;}
 // .cell {border: 1px solid #ddd;}
 // .cell:hover {background-color: #eee; border: 1px solid #ccc;}
-// .seperator {display: block;}
 // .hidden {display: none;}
 // .material-symbols-outlined {
 //   font-family: 'Material Symbols Outlined';
@@ -49,23 +42,7 @@
 // body {font-family: Arial, sans-serif;}
 
 //+ _initializationCode
-// textarea.cell_body {height: expression(this.scrollHeight + "px");}
 var dirty = false;
-if(typeof(shouldSave) !== 'undefined' && shouldSave) {
-  save();
-  shouldSave = false;
-}
-
-function updateTextArea(text, direction = null) {
-  textarea = document.getElementById('editor');
-  textarea.style.direction = 'ltr';
-  if(direction && direction == 'rtl') {
-    textarea.style.direction = 'rtl';
-  }
-  textarea.value = text;
-  textarea.style.height = Math.min(textarea.scrollHeight, 20 * 16) + 'px';
-}
-
 
 function updateScript(text) {
   let script = document.createElement('script');
@@ -151,20 +128,6 @@ function store() {
   localStorage.setItem(label + ' ' + timestamp, content);
 }
 
-function storeBlock() {
-  let blockName = document.getElementById('blockNames').value;
-  let blockContent = document.getElementById('editor').value;
-  blocks[blockName].content = storableBlockContent(blocks[blockName].attributes.type, blockContent);
-  store();
-  dirty = true;
-}
-
-function storeWholeScript() {
-  let updated_script = document.getElementById('editor').value;
-  blocks = parseBlocks(updated_script);
-  store();
-}
-
 function execute() {
   Array.from(document.head.getElementsByTagName('style')).forEach(element => element.remove());
   currentScript = document.getElementById('compose').innerHTML;
@@ -195,72 +158,6 @@ function execute() {
   }
 }
 
-onSelectWholeScript = function() {
-  document.getElementById('checkpoints').style.display = 'none';
-  document.getElementById('blockNames').style.display = 'none';
-  updateTextArea(stringifyBlocks(blocks));
-  document.getElementById('store').onclick = function() {
-    storeWholeScript();
-  }
-  document.getElementById('execute').onclick = function() {
-    storeWholeScript();
-    execute();
-  }
-}
-
-onSelectBlock = function() {
-  document.getElementById('checkpoints').style.display = 'none';
-  let blockNames = Object.keys(blocks);
-  let select = document.getElementById('blockNames');
-  select.options.length = 0;
-  select.style.display = 'block';
-  for(const blockName of Object.keys(blocks)) {
-    let option = document.createElement('option');
-    option.value = blockName;
-    option.innerHTML = blockName;
-    select.appendChild(option);
-  }
-  select.onchange = function() {
-    let blockName = select.value;
-    updateTextArea(editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content), blocks[blockName].attributes.direction);
-  }
-  document.getElementById('store').onclick = function() {
-    storeBlock();
-  }
-  document.getElementById('execute').onclick = function() {
-    storeBlock();
-    execute();
-  }
-  updateTextArea(editableBlockContent(blocks[blockNames[0]].attributes.type, blocks[blockNames[0]].content));
-}
-
-onRestore = function() {
-  document.getElementById('blockNames').style.display = 'none';
-  let select = document.getElementById('checkpoints');
-  select.options.length = 0;
-  select.style.display = 'block';
-  for(let key of Object.keys(localStorage)) {
-    let option = document.createElement('option');
-    option.value = key;
-    option.innerHTML = key;
-    select.appendChild(option);
-  }
-  select.onchange = function() {
-    let label = select.value;
-    let content = localStorage.getItem(label);
-    blocks = parseBlocks(content);
-    updateTextArea(stringifyBlocks(blocks));
-  }
-  document.getElementById('store').onclick = function() {
-    storeWholeScript();
-  }
-  document.getElementById('execute').onclick = function() {
-    storeWholeScript();
-    execute();
-  }
-  updateTextArea(stringifyBlocks(blocks));
-}
-
 var blocks = parseBlocks(document.getElementById('compose').innerHTML);
 
 for(let [blockName, block] of Object.entries(blocks)) {
@@ -281,7 +178,6 @@ for(let [blockName, block] of Object.entries(blocks)) {
 }
 
 initialized = true;
-
 
 //+ _figureFunctions
 function Rect(x,y,width,height,strokeWidth) {
@@ -337,8 +233,15 @@ function getCellOutput(blockName) {
   return cell.getElementsByClassName('output')[0];
 }
 
+function getBlockTarget(blockName) {
+  if (targetIsSelf(blockName)) {
+    return getCellOutput(blockName);
+  }
+  return document.getElementById(blocks[blockName].attributes.target);
+}
+
 function javascriptBlockContentFromCellContent(blockName, editableContent) {
-  return "{function print(string) {getCellOutput('" + blockName + "').innerHTML += string + '<br>';}\n" + editableContent + "\n } \n";
+  return "{function print(string) {getBlockTarget('" + blockName + "').innerHTML += string + '<br>';}\n" + editableContent + "\n } \n";
 }
 
 function javascriptBlockContentToCellEditableContent(cellContent) {
@@ -353,8 +256,7 @@ function blockType(blockName) {
 }
 
 function showCellBodyViewContent(blockName) {
-  return  ((!getCellOutput(blockName)) || getCellOutput(blockName).innerHTML == '' ||
-          (blocks[blockName].attributes.target && blocks[blockName].attributes.target != blockName+'_output'));
+  return  ((!getCellOutput(blockName)) || getCellOutput(blockName).innerHTML == '' || !targetIsSelf(blockName));
 }
 
 function cellBodyViewContent(blockName) {
@@ -383,6 +285,9 @@ function createCellBody(mode, attributes, editableContent, blockName) {
     case 'edit':
       cellBody = document.createElement('textarea');
       cellBody.value = cellEditableContentFromBlockEditableContent(attributes.type, editableContent);
+      if(attributes.direction && attributes.direction == 'rtl') {
+        cellBody.style.direction = 'rtl';
+      }
       break;
     case 'view':
       cellBody = document.createElement('div');
@@ -390,41 +295,58 @@ function createCellBody(mode, attributes, editableContent, blockName) {
       break;
   }
   cellBody.className = 'cell_body';
-  if(attributes.direction && attributes.direction == 'rtl') {
-    cellBody.style.direction = 'rtl';
-  }
   return cellBody;
 }
 
-function appendCellOutput(cell) {
-  let blockName = cell.id;
-  let block = blocks[blockName];
-  let output = document.createElement('div');
-  output.id = blockName + '_output';
-  output.className = 'output';
-  output.style.display = 'block';
-  cell.appendChild(output);
-  if(block.attributes.type == "markdown" && block.content != "") {
+function targetIsSelf(blockName) {
+  return (!blocks[blockName].attributes.target) || blocks[blockName].attributes.target == blockName+'_output';
+}
+
+function populateCellOutput(output, blockName) {
+  if (output.querySelector("#"+blockName)) {
+    return;
+  }
+  const block = blocks[blockName];
+  if(block.attributes.type == "markdown" && blocks[blockName].content != "") {
     output.innerHTML = marked.parse(editableBlockContent(blockType(blockName), block.content));
+  }
+  if(block.attributes.type == "html" && blocks[blockName].content != "") {
+    output.innerHTML = editableBlockContent(blockType(blockName), block.content);
   }
   if(block.attributes.direction && block.attributes.direction == 'rtl') {
     output.style.direction = 'rtl';
   }
 }
 
+function appendCellOutput(cell) {
+  const blockName = cell.id;
+  const block = blocks[blockName];
+  let output = document.createElement('div');
+  output.id = blockName + '_output';
+  output.className = 'output';
+  output.style.display = 'block';
+  cell.appendChild(output);
+  return output;
+}
+
 function setCellContent(mode, cell, type, attributes, editableContent) {
+  let blockName = cell.id;
+  let block = blocks[blockName];
   if (cell.getElementsByClassName('cell_body').length > 0) {
     cell.removeChild(cell.getElementsByClassName('cell_body')[0]);
   }
-  if (cell.getElementsByClassName('output').length > 0 && attributes.type != "javascript") {
-    cell.removeChild(cell.getElementsByClassName('output')[0]);
+  let output = cell.getElementsByClassName('output')[0];
+  if(output) {
+    output.innerHTML = '';
+  } else {
+    output = appendCellOutput(cell);
   }
-  if(cell.getElementsByClassName('output').length == 0) {
-    appendCellOutput(cell);
+  if(!targetIsSelf(cell.id)) {
+    output = document.getElementById(block.attributes.target);
   }
-  let cellOutput = cell.getElementsByClassName('output')[0];
+  populateCellOutput(output, blockName);
   let cellBody = createCellBody(mode, attributes, editableContent, cell.id);
-  cell.insertBefore(cellBody, cellOutput);
+  cell.insertBefore(cellBody, getCellOutput(blockName));
   if(mode == 'edit') {
     cellBody.style.height = '1px';
     cellBody.style.height = (cellBody.scrollHeight+5) + 'px';
@@ -874,7 +796,6 @@ function save() {
  }
 
  let label = document.getElementById('label').value;
- // shouldSave = true;
  const data = "<!DOCTYPE html>\n"+document.documentElement.outerHTML;
  const link = document.createElement('a');
  link.setAttribute('download', label+'.html');
@@ -910,7 +831,7 @@ document.getElementById('label').onchange = function() {
 //+ markdowntest {"type": "markdown"}
 // # Heading
 //+ computeCode
-{function print(string) {getCellOutput('computeCode').innerHTML += string + '<br>';}
+{function print(string) {getBlockTarget('computeCode').innerHTML += string + '<br>';}
 // JS code here. Call print(text) to print output on the output panel
 }
 
