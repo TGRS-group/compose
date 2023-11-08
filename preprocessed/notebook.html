@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Compose-notebook</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 </head>
@@ -285,8 +286,8 @@ function createCellBody(mode, attributes, editableContent, blockName) {
     case 'edit':
       cellBody = document.createElement('textarea');
       cellBody.value = cellEditableContentFromBlockEditableContent(attributes.type, editableContent);
-      if(attributes.direction && attributes.direction == 'rtl') {
-        cellBody.style.direction = 'rtl';
+      if(attributes.direction) {
+        cellBody.style.direction = attributes.direction;
       }
       break;
     case 'view':
@@ -313,8 +314,8 @@ function populateCellOutput(output, blockName) {
   if(block.attributes.type == "html" && blocks[blockName].content != "") {
     output.innerHTML = editableBlockContent(blockType(blockName), block.content);
   }
-  if(block.attributes.direction && block.attributes.direction == 'rtl') {
-    output.style.direction = 'rtl';
+  if(block.attributes.direction) {
+    output.style.direction = block.attributes.direction;
   }
 }
 
@@ -336,7 +337,7 @@ function setCellContent(mode, cell, type, attributes, editableContent) {
     cell.removeChild(cell.getElementsByClassName('cell_body')[0]);
   }
   let output = cell.getElementsByClassName('output')[0];
-  if(output) {
+  if(output && type != 'javascript') {
     output.innerHTML = '';
   } else {
     output = appendCellOutput(cell);
@@ -393,13 +394,14 @@ function updateCell(cell) {
 }
 
 
-function createSymbolButton(symbol, title, buttonClass) {
+function createSymbolButton(symbol, title, buttonClass, onclick) {
   const iconButtonClasses = ['btn', 'btn-outline-dark', 'btn-sm', 'material-symbols-outlined'];
 //const iconButtonClasses = ['button', 'is-small', 'is-outlined', 'material-symbols-outlined'];
   let button = document.createElement('button');
   button.classList.add(buttonClass,...iconButtonClasses);
   button.innerHTML = symbol;
   button.title = title;
+  button.onclick = onclick;
   return button;
 }
 
@@ -509,7 +511,6 @@ function getSettingValue(settingsList, settingIndex, settingType) {
     case 'select':
       return settingItem.getElementsByTagName('select')[0].value;
   }
-  return settingValue;
 }
 
 function createSettingsList(blockName) {
@@ -521,10 +522,9 @@ function createSettingsList(blockName) {
     settingsList.appendChild(settingItem);
   }
   let update = document.createElement('button');
-  update.className = 'btn btn-outline-dark btn-sm';
+  update.classList.add('btn', 'btn-outline-dark', 'btn-sm');
   update.innerHTML = 'Update';
   update.onclick = function() {
-    let settings = {};
     let idx = 0;
     for(let setting in populatedSettings) {
       let value = getSettingValue(settingsList, idx, populatedSettings[setting].type);
@@ -554,11 +554,26 @@ function createSettingsList(blockName) {
   return settingsList;
 }
 
-function createCellHeader(contentAttributes, blockName) {
-  let cellHeader = document.createElement('div');
-  cellHeader.classList.add('cell_header', 'btn-toolbar');
-  let editButton = createSymbolButton('edit', 'Edit cell content', 'edit_button');
-  let viewButton = createSymbolButton('visibility', 'View', 'view_button');
+function setCellMode(mode, cell, type, attributes, content) {
+  setHeaderMode(mode, cell);
+  setCellContent(mode, cell, type, attributes, content);
+}
+
+function onCellEdit() {
+    const blockName = this.parentElement.parentElement.id;
+    setCellMode('edit', this.parentElement.parentElement, blocks[blockName].attributes.type, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+    this.style.display = 'none';
+    this.parentElement.getElementsByClassName('view_button')[0].style.display = 'inline';
+}
+
+function onCellView() {
+    const blockName = this.parentElement.parentElement.id;
+    setCellMode('view', this.parentElement.parentElement, blocks[blockName].attributes.type, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+    this.style.display = 'none';
+    this.parentElement.getElementsByClassName('edit_button')[0].style.display = 'inline';
+}
+
+function createSettingsButton(blockName) {
   let settingsButton = createSymbolButton('settings', 'Cell settings', 'settings_button');
   settingsButton.classList.add('dropdown-toggle');
   settingsButton.setAttribute('data-bs-toggle', 'dropdown');
@@ -566,57 +581,58 @@ function createCellHeader(contentAttributes, blockName) {
   let settingsContainer = document.createElement('div');
   settingsContainer.className = 'dropdown';
   settingsContainer.append(settingsButton, createSettingsList(blockName));
-  cellHeader.append(editButton, viewButton, settingsContainer);
-  editButton.onclick = function() {
-    let cell = editButton.parentElement.parentElement;
-    setHeaderMode('edit', cell);
-    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
-    editButton.style.display = 'none';
-    viewButton.style.display = 'inline';
-  }
-  viewButton.onclick = function() {
-    let cell = viewButton.parentElement.parentElement;
-    updateCell(cell);
-    setHeaderMode('view', cell);
-    setCellContent('view', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
-    editButton.style.display = 'inline';
-    viewButton.style.display = 'none';
-  }
-  viewButton.style.display = 'none';
-  let deleteButton = createSymbolButton('delete', 'Delete cell', 'delete_button');
-  deleteButton.onclick = function() {
-    let cell = deleteButton.parentElement.parentElement;
-    let seperator = cell.nextElementSibling;
-    let blockName = cell.id;
+  return settingsContainer;
+}
+
+function onCellDelete() {
+    const cell = this.parentElement.parentElement;
+    const seperator = cell.nextElementSibling;
+    const blockName = cell.id;
     delete blocks[blockName];
     cell.parentElement.removeChild(cell);
     if(seperator && seperator.className == 'seperator') {
       seperator.parentElement.removeChild(seperator);
     }
-  }
-  cellHeader.appendChild(deleteButton);
+}
 
-  let updateButton = createSymbolButton('download', 'Update cell content', 'update_button');
-  updateButton.onclick = function() {
-    let cell = updateButton.parentElement.parentElement;
-    updateCell(cell);
-  }
-  cellHeader.appendChild(updateButton);
+function onCellUpdate() {
+    updateCell(this.parentElement.parentElement);
+}
 
-  let executionButton = createSymbolButton('play_arrow', 'Execute cell', 'execute_button');
-  executionButton.onclick = function() {
-    let cell = executionButton.parentElement.parentElement;
-    if(blocks[cell.id].attributes && blocks[cell.id].attributes.type != 'javascript') {
+function onCellExecute() {
+    const cell = this.parentElement.parentElement;
+    const blockName = cell.id;
+    if(blocks[blockName].attributes && blocks[blockName].attributes.type != 'javascript') {
       return;
     }
     updateCell(cell);
-    let output = getCellOutput(cell.id);
+    let output = getBlockTarget(blockName);
     output.innerHTML = '';
-    new Function(blocks[cell.id].content)();
-  }
-  cellHeader.appendChild(executionButton);
+    new Function(blocks[blockName].content)();
+}
 
-  let typeSelector = document.createElement('select');
+function onCellLtr() {
+    const cell = this.parentElement.parentElement;
+    const block = blocks[cell.id];
+    updateCell(cell);
+    this.classList.add('active');
+    this.parentElement.getElementsByClassName('rtl_button')[0].classList.remove('active');
+    block.attributes.direction = 'ltr';
+    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+}
+
+function onCellRtl() {
+    const cell = this.parentElement.parentElement;
+    const block = blocks[cell.id];
+    updateCell(cell);
+    this.classList.add('active');
+    this.parentElement.getElementsByClassName('ltr_button')[0].classList.remove('active');
+    block.attributes.direction = 'rtl';
+    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+}
+
+function createTypeSelector(blockName) {
+  const typeSelector = document.createElement('select');
   typeSelector.className = 'type_selector';
   typeSelector.classList.add('custom-select', 'custom-select-sm');
   let types = ['Markdown', 'JavaScript', 'HTML', 'CSS'];
@@ -626,38 +642,36 @@ function createCellHeader(contentAttributes, blockName) {
     option.innerHTML = type;
     typeSelector.appendChild(option);
   }
-  typeSelector.value = contentAttributes.type;
+  typeSelector.value = blocks[blockName].attributes.type;
   typeSelector.onchange = function() {
     //let fromType = contentAttributes.type;
     // convert content of block and cell to new type
-    let cell = typeSelector.parentElement.parentElement;
-    contentAttributes.type = typeSelector.value;
-    blocks[cell.id].attributes.type = typeSelector.value;
+    const cell = typeSelector.parentElement.parentElement;
+    const block = blocks[cell.id];
+    block.attributes.type = typeSelector.value;
     updateBlockContentFromCellContent(cell.id, cell.getElementsByClassName('cell_body')[0].value);
     setHeaderMode('edit', cell);
-    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
+    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
   }
-  cellHeader.appendChild(typeSelector);
+  return typeSelector;
+}
 
-  let ltr = createSymbolButton('format_textdirection_l_to_r', 'Set text direction to left-to-right', 'ltr_button');
-  ltr.onclick = function() {
-    this.classList.add('active');
-    rtl.classList.remove('active');
-    let cell = ltr.parentElement.parentElement;
-    contentAttributes.direction = 'ltr';
-    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
-  }
-  cellHeader.appendChild(ltr);
-  let rtl = createSymbolButton('format_textdirection_r_to_l', 'Set text direction to right-to-left', 'rtl_button');
-  rtl.onclick = function() {
-    this.classList.add('active');
-    ltr.classList.remove('active');
-    let cell = rtl.parentElement.parentElement;
-    contentAttributes.direction = 'rtl';
-    setCellContent('edit', cell, contentAttributes.type, contentAttributes, editableBlockContent(contentAttributes.type, blocks[cell.id].content));
-  }
-  cellHeader.appendChild(rtl);
+function createCellHeader(contentAttributes, blockName) {
+  let cellHeader = document.createElement('div');
+  cellHeader.classList.add('cell_header', 'btn-toolbar');
+  const editButton = createSymbolButton('edit', 'Edit cell content', 'edit_button', onCellEdit);
+  const viewButton = createSymbolButton('visibility', 'View', 'view_button', onCellView);
+  const settingsContainer = createSettingsButton(blockName);
+  const deleteButton = createSymbolButton('delete', 'Delete cell', 'delete_button', onCellDelete);
+  const updateButton = createSymbolButton('download', 'Update cell content', 'update_button', onCellUpdate);
+  const executionButton = createSymbolButton('play_arrow', 'Execute cell', 'execute_button', onCellExecute);
+  const typeSelector = createTypeSelector(blockName);
+  const ltr = createSymbolButton('format_textdirection_l_to_r', 'Set text direction to left-to-right', 'ltr_button', onCellLtr);
+  const rtl = createSymbolButton('format_textdirection_r_to_l', 'Set text direction to right-to-left', 'rtl_button', onCellRtl);
 
+  cellHeader.append(editButton, viewButton, settingsContainer, deleteButton, updateButton, executionButton, typeSelector, ltr, rtl);
+
+  viewButton.style.display = 'none';
   if(contentAttributes.type != 'markdown') {
     ltr.style.display = 'none';
     rtl.style.display = 'none';
