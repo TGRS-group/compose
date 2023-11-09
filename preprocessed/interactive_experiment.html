@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Compose-notebook</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div id="default"></div>
+
+<script id="compose">
+//+ _mainHtml {"type": "html", "target": "default"}
+// <h4>Compose notebook </h4>
+// <div class="input-group">
+//  <input type="text" id="label" value="Untitled" title="Rename">
+// <div class="form-check">
+//  <input class="form-check-input" type="checkbox" value="" id="show_hidden_cells">
+//  <label class="form-check-label" for="show_hidden_cells">
+//  Show hidden cells
+//  </label>
+//  </div>
+// <button onclick="{storeCellsAsBlocks();execute()}" title="Run all cells" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >fast_forward</button>
+// <button onclick="{save()}" title="Download" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >save</button>
+// </div>
+//  <div id="notebook_content">
+//  </div>
+
+//+ _style {"type": "css"}
+// textarea {padding: 5px; width: 100%; box-sizing: border-box;}
+// .cell {border: 1px solid #ddd;}
+// .cell:hover {background-color: #eee; border: 1px solid #ccc;}
+// .hidden {display: none;}
+// .material-symbols-outlined {
+//   font-family: 'Material Symbols Outlined';
+//   font-size: 1em;
+//   vertical-align: middle;
+// }
+// body {font-family: Arial, sans-serif;}
+
+//+ _initializationCode
+var dirty = false;
+
+function updateScript(text) {
+  let script = document.createElement('script');
+  script.id = 'compose';
+  let scriptText = document.createTextNode(text);
+  script.appendChild(scriptText);
+  document.body.appendChild(script);
+}
+
+function editableBlockContent(type, storableContent) {
+  if(type == 'javascript')
+    return storableContent;
+  let lines = storableContent.split('\n');
+  let result = '';
+  for(const line of lines) {
+    if(line.match(/^\/\//)) {
+      result += line.substring(2) + '\n';
+    }
+  }
+  return result;
+}
+
+function storableBlockContent(type, editableContent) {
+  if(type == 'javascript') {
+    return editableContent;
+  }
+  let lines = editableContent.split('\n');
+  let result = '';
+  for(const line of lines) {
+    result += '//' + line + '\n';
+  }
+  return result;
+}
+
+function parseHeader(line) {
+  if(!line.trim().match(/^\/\/\+[ ]*[a-zA-Z0-9_]+/))
+    return null;
+  let blockName = line.match(/[a-zA-Z0-9_]+/)[0];
+  let blockAttributes = JSON.parse((line.match(/\{.*\}/) || ['{"type": "javascript"}'])[0]);
+  return { "name": blockName, "attributes": blockAttributes };
+}
+
+function trimScript(text) {
+  text = text.split('\/\/--BEGIN');
+  text = text[text.length - 1].split('\/\/--END')[0];
+  return text.trim();
+}
+
+function parseBlocks(text) {
+  var blocks = {};
+  var lines = trimScript(text).split('\n');
+  var blockName = '';
+  for(const line of lines) {
+    header = parseHeader(line);
+    if(header) {
+      blocks[header.name] = { "attributes": header.attributes, "content": ''};
+      blockName = header.name;
+      continue;
+    }
+    blocks[blockName].content += line + '\n';
+  }
+  return blocks;
+}
+
+function stringifyBlocks(blocks) {
+  var text = '';
+  for(const blockName of Object.keys(blocks)) {
+    text += '//+ ' + blockName + JSON.stringify(blocks[blockName].attributes) + '\n';
+    text += blocks[blockName].content;
+  }
+  return text;
+}
+
+function store() {
+  let label = document.getElementById('label').value;
+  let timestamp = (new Date()).toISOString().substring(0, 19);
+  let content = stringifyBlocks(blocks);
+  for (let i = 0; i < localStorage.length; i++){
+    if(localStorage.getItem(localStorage.key(i)) == content && localStorage.key(i).startsWith(label)) {
+      return;
+    }
+  }
+  localStorage.setItem(label + ' ' + timestamp, content);
+}
+
+function execute() {
+  Array.from(document.head.getElementsByTagName('style')).forEach(element => element.remove());
+  currentScript = document.getElementById('compose').innerHTML;
+  newScript = stringifyBlocks(blocks);
+  document.body.innerHTML = '<div id="default"></div>';
+  try{
+    new Function(newScript); // check if the script is valid
+    updateScript(`
+      try { initialized = false;
+      \/\/--BEGIN
+      ${newScript}
+      \/\/--END
+       } catch(e) {
+         alert('Error while executing updated script\\n'+ e + '\\n' + e.stack);
+         if(! initialized) {
+           document.getElementById('compose').remove();
+           let script = document.createElement('script');
+           script.id = 'compose';
+           let scriptText = document.createTextNode(currentScript);
+           script.appendChild(scriptText);
+           document.body.appendChild(script);
+         }
+       }
+    `);
+  } catch(e) {
+    alert('Updated script is not valid\n'+ e);
+    updateScript(trimScript(currentScript));
+  }
+}
+
+var blocks = parseBlocks(document.getElementById('compose').innerHTML);
+
+for(let [blockName, block] of Object.entries(blocks)) {
+  switch(block.attributes.type) {
+    case 'html':
+      let target = document.getElementById(block.attributes.target);
+      if(!target) break;
+      if (block.attributes.direction == 'rtl') {
+        target.style.direction = 'rtl';
+      }
+      target.innerHTML = editableBlockContent(block.attributes.type, block.content);
+      break;
+    case 'css':
+      let style = document.createElement('style');
+      style.innerHTML = editableBlockContent(block.attributes.type, block.content);
+      document.head.appendChild(style);
+      break;
+  }
+}
+
+initialized = true;
+
+//+ _figureFunctions
+function Rect(x,y,width,height,strokeWidth) {
+  rect = document.createElementNS("http://www.w3.org/2000/svg","rect");
+  rect.setAttribute("x",x);
+  rect.setAttribute("y",y);
+  rect.setAttribute("width",width);
+  rect.setAttribute("height",height);
+  rect.setAttribute("fill","none");
+  rect.setAttribute("stroke","black");
+  rect.setAttribute("stroke-width",strokeWidth || "1");
+  document.getElementById("svgOutput").appendChild(rect);
+  return rect;
+}
+
+function Circle(cx,cy,r) {
+  circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
+  circle.setAttribute("cx",cx);
+  circle.setAttribute("cy",cy);
+  circle.setAttribute("r",r);
+  circle.setAttribute("fill","none");
+  circle.setAttribute("stroke","black");
+  document.getElementById("svgOutput").appendChild(circle);
+  return circle;
+}
+
+function Line(x1,y1,x2,y2) {
+  line = document.createElementNS("http://www.w3.org/2000/svg","line");
+  line.setAttribute("x1",x1);
+  line.setAttribute("y1",y1);
+  line.setAttribute("x2",x2);
+  line.setAttribute("y2",y2);
+  line.setAttribute("stroke","black");
+  document.getElementById("svgOutput").appendChild(line);
+  return line;
+}
+
+function xlim(xmin,width) {
+  ymin = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[1];
+  height = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[3];
+  document.getElementById("svgOutput").setAttribute("viewBox",xmin+" "+ymin+" "+width+" "+height);
+}
+
+function ylim(ymin,height) {
+  xmin = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[0];
+  width = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[2];
+  document.getElementById("svgOutput").setAttribute("viewBox",xmin+" "+ymin+" "+width+" "+height);
+}
+
+//+ _notebookSetup
+function getCellOutput(blockName) {
+  cell = document.getElementById(blockName);
+  return cell.getElementsByClassName('output')[0];
+}
+
+function getBlockTarget(blockName) {
+  if (targetIsSelf(blockName)) {
+    return getCellOutput(blockName);
+  }
+  return document.getElementById(blocks[blockName].attributes.target);
+}
+
+function javascriptBlockContentFromCellContent(blockName, editableContent) {
+  return "{function print(string) {getBlockTarget('" + blockName + "').innerHTML += string + '<br>';}\n" + editableContent + "\n } \n";
+}
+
+function javascriptBlockContentToCellEditableContent(cellContent) {
+  return cellContent.split("\n").slice(1,-2).join("\n");
+}
+
+function blockType(blockName) {
+  if (blocks[blockName].attributes && blocks[blockName].attributes.type) {
+    return blocks[blockName].attributes.type;
+  }
+  return 'javascript';
+}
+
+function showCellBodyViewContent(blockName) {
+  return  ((!getCellOutput(blockName)) || getCellOutput(blockName).innerHTML == '' || !targetIsSelf(blockName));
+}
+
+function cellBodyViewContent(blockName) {
+     return `<pre><code><i>${blockName}: ${JSON.stringify(blocks[blockName].attributes)}</i></code></pre>`;
+}
+
+function cellViewedContent(blockName) {
+  if(showCellBodyViewContent(blockName)) {
+    return cellBodyViewContent(blockName);
+  }
+  return '';
+}
+
+function cellEditableContentFromBlockEditableContent(type, editableContent) {
+  let cellEditableContent = editableContent;
+  switch(type) {
+    case 'javascript':
+      cellEditableContent = javascriptBlockContentToCellEditableContent(editableContent);
+      break;
+  }
+  return cellEditableContent;
+}
+
+function createCellBody(mode, attributes, editableContent, blockName) {
+  switch(mode) {
+    case 'edit':
+      cellBody = document.createElement('textarea');
+      cellBody.value = cellEditableContentFromBlockEditableContent(attributes.type, editableContent);
+      if(attributes.direction) {
+        cellBody.style.direction = attributes.direction;
+      }
+      break;
+    case 'view':
+      cellBody = document.createElement('div');
+      cellBody.innerHTML = cellViewedContent(blockName);
+      break;
+  }
+  cellBody.className = 'cell_body';
+  return cellBody;
+}
+
+function targetIsSelf(blockName) {
+  return (!blocks[blockName].attributes.target) || blocks[blockName].attributes.target == blockName+'_output';
+}
+
+function populateCellOutput(output, blockName) {
+  if (output.querySelector("#"+blockName)) {
+    return;
+  }
+  const block = blocks[blockName];
+  if(block.attributes.type == "markdown" && blocks[blockName].content != "") {
+    output.innerHTML = marked.parse(editableBlockContent(blockType(blockName), block.content));
+  }
+  if(block.attributes.type == "html" && blocks[blockName].content != "") {
+    output.innerHTML = editableBlockContent(blockType(blockName), block.content);
+  }
+  if(block.attributes.direction) {
+    output.style.direction = block.attributes.direction;
+  }
+}
+
+function appendCellOutput(cell) {
+  const blockName = cell.id;
+  const block = blocks[blockName];
+  let output = document.createElement('div');
+  output.id = blockName + '_output';
+  output.className = 'output';
+  output.style.display = 'block';
+  cell.appendChild(output);
+  return output;
+}
+
+function setCellContent(mode, cell, type, attributes, editableContent) {
+  let blockName = cell.id;
+  let block = blocks[blockName];
+  if (cell.getElementsByClassName('cell_body').length > 0) {
+    cell.removeChild(cell.getElementsByClassName('cell_body')[0]);
+  }
+  let output = cell.getElementsByClassName('output')[0];
+  if(output && type != 'javascript') {
+    output.innerHTML = '';
+  } else {
+    output = appendCellOutput(cell);
+  }
+  if(!targetIsSelf(cell.id)) {
+    output = document.getElementById(block.attributes.target);
+  }
+  populateCellOutput(output, blockName);
+  let cellBody = createCellBody(mode, attributes, editableContent, cell.id);
+  cell.insertBefore(cellBody, getCellOutput(blockName));
+  if(mode == 'edit') {
+    cellBody.style.height = '1px';
+    cellBody.style.height = (cellBody.scrollHeight+5) + 'px';
+  }
+}
+
+function setHeaderMode(mode, cell) {
+  let cellHeader = cell.getElementsByClassName('cell_header')[0];
+  let ltrButton = cellHeader.getElementsByClassName('ltr_button')[0];
+  let rtlButton = cellHeader.getElementsByClassName('rtl_button')[0];
+  let executeButton = cellHeader.getElementsByClassName('execute_button')[0];
+  for (class_name of ['update_button', 'type_selector']) {
+    let button = cellHeader.getElementsByClassName(class_name)[0];
+    button.classList.toggle('hidden', mode != 'edit');
+  }
+  for (class_name of ['ltr_button', 'rtl_button']) {
+    let button = cellHeader.getElementsByClassName(class_name)[0];
+    button.classList.toggle('hidden', mode != 'edit' || !blocks[cell.id].attributes.type || blocks[cell.id].attributes.type != 'markdown');
+  }
+  executeButton.classList.toggle('hidden', mode != 'edit' || blocks[cell.id].attributes.type != 'javascript');
+  if (mode == 'edit' && blocks[cell.id].attributes.type && blocks[cell.id].attributes.type == 'markdown') {
+    ltrButton.classList.add('active');
+    if(blocks[cell.id].attributes.direction && blocks[cell.id].attributes.direction == 'rtl') {
+      rtlButton.classList.add('active');
+      ltrButton.classList.remove('active');
+    }
+  }
+}
+
+function updateBlockContentFromCellContent(blockName, cellContent) {
+  let type = blocks[blockName].attributes.type;
+  let blockContent = cellContent;
+  if(type == 'javascript') {
+    blockContent = javascriptBlockContentFromCellContent(blockName, cellContent);
+  }
+  blocks[blockName].content = storableBlockContent(type, blockContent);
+  dirty = true;
+}
+
+function updateCell(cell) {
+  let editableContent = cell.getElementsByClassName('cell_body')[0].value;
+  updateBlockContentFromCellContent(cell.id, editableContent);
+  store();
+}
+
+
+function createSymbolButton(symbol, title, buttonClass, onclick) {
+  const iconButtonClasses = ['btn', 'btn-outline-dark', 'btn-sm', 'material-symbols-outlined'];
+//const iconButtonClasses = ['button', 'is-small', 'is-outlined', 'material-symbols-outlined'];
+  let button = document.createElement('button');
+  button.classList.add(buttonClass,...iconButtonClasses);
+  button.innerHTML = symbol;
+  button.title = title;
+  button.onclick = onclick;
+  return button;
+}
+
+const unpopulatedSettings ={
+ 'Name': {'type': 'string', 'required': true},
+//  'Type': {'type': 'select', 'values': ['html', 'markdown', 'javascript', 'css'], 'required': true},
+ 'Target': {'type': 'string'},
+ 'Hidden': {'type': 'boolean'},
+}
+
+function createStringSettingItem(settingName, value) {
+  let settingInput = document.createElement('div');
+  settingInput.classList.add('input-group', 'input-group-sm');
+  let settingInputPrepend = document.createElement('span');
+  settingInputPrepend.className = 'input-group-text';
+  settingInputPrepend.innerHTML = settingName;
+  settingInput.appendChild(settingInputPrepend);
+  let settingInputText = document.createElement('input');
+  settingInputText.type = 'text';
+  settingInputText.className = 'form-control';
+  settingInputText.value = value;
+  settingInputText.setAttribute('size', '20');
+  settingInput.appendChild(settingInputText);
+  return settingInput;
+}
+
+function createBooleanSettingItem(settingName, value) {
+  let settingInput = document.createElement('div');
+  settingInput.className = 'form-check';
+  let settingInputCheck = document.createElement('input');
+  settingInputCheck.type = 'checkbox';
+  settingInputCheck.className = 'form-check-input';
+  settingInputCheck.checked = value;
+  let settingInputLabel = document.createElement('label');
+  settingInputLabel.className = 'form-check-label';
+  settingInputLabel.innerHTML = settingName;
+  settingInput.append(settingInputLabel, settingInputCheck);
+  return settingInput;
+}
+
+function createSelectSettingItem(settingName, values, selecetedValue) {
+  let settingInput = document.createElement('div');
+  settingInput.classList.add('input-group', 'input-group-sm');
+  let settingInputPrepend = document.createElement('span');
+  settingInputPrepend.className = 'input-group-text';
+  settingInputPrepend.innerHTML = settingName;
+  settingInput.appendChild(settingInputPrepend);
+  let settingInputSelect = document.createElement('select');
+  settingInputSelect.className = 'form-select';
+  for(let value of values) {
+    let settingInputOption = document.createElement('option');
+    settingInputOption.value = value;
+    settingInputOption.innerHTML = value;
+    if(value == selecetedValue) {
+      settingInputOption.selected = true;
+    }
+    settingInputSelect.appendChild(settingInputOption);
+  }
+  settingInput.appendChild(settingInputSelect);
+  return settingInput;
+}
+
+function createSettingItem(settingName, setting) {
+  let settingItem = document.createElement('li');
+  settingItem.className = 'dropdown-item';
+  let settingInput = null;
+  switch(setting.type) {
+    case 'string':
+      settingInput = createStringSettingItem(settingName, setting.value);
+      break;
+    case 'boolean':
+      settingInput = createBooleanSettingItem(settingName, setting.value);
+      break;
+    case 'select':
+      settingInput = createSelectSettingItem(settingName, setting.values, setting.value);
+      break;
+  }
+  settingItem.appendChild(settingInput);
+  return settingItem;
+}
+
+function populateSettings(blockName) {
+  let populatedSettings = {};
+  for(let setting in unpopulatedSettings) {
+    populatedSettings[setting] = unpopulatedSettings[setting];
+    if(blocks[blockName].attributes && blocks[blockName].attributes[setting.toLowerCase()]) {
+      populatedSettings[setting].value = blocks[blockName].attributes[setting.toLowerCase()];
+    }
+  }
+  populatedSettings['Name'].value = blockName;
+  if(!blocks[blockName].attributes.target) {
+    populatedSettings['Target'].value = blockName+'_output';
+  }
+  if(!blocks[blockName].attributes.hidden) {
+    populatedSettings['Hidden'].value = blockName.startsWith('_');
+  }
+  return populatedSettings;
+}
+
+function getSettingValue(settingsList, settingIndex, settingType) {
+  let settingItem = settingsList.getElementsByClassName('dropdown-item')[settingIndex];
+  switch(settingType) {
+    case 'string':
+      return settingItem.getElementsByTagName('input')[0].value;
+    case 'boolean':
+      return settingItem.getElementsByTagName('input')[0].checked;
+    case 'select':
+      return settingItem.getElementsByTagName('select')[0].value;
+  }
+}
+
+function createSettingsList(blockName) {
+  let populatedSettings = populateSettings(blockName);
+  let settingsList = document.createElement('ul');
+  settingsList.className = 'dropdown-menu';
+  for( let setting in populatedSettings) {
+    let settingItem = createSettingItem(setting, populatedSettings[setting]);
+    settingsList.appendChild(settingItem);
+  }
+  let update = document.createElement('button');
+  update.classList.add('btn', 'btn-outline-dark', 'btn-sm');
+  update.innerHTML = 'Update';
+  update.onclick = function() {
+    let idx = 0;
+    for(let setting in populatedSettings) {
+      let value = getSettingValue(settingsList, idx, populatedSettings[setting].type);
+      if(setting != 'Name') {
+          blocks[blockName].attributes[setting.toLowerCase()] = value;
+      } else {
+        let cell = document.getElementById(blockName);
+        prevBlockName = cell.id;
+        if (prevBlockName != value) {
+          blocks[value] = blocks[prevBlockName];
+          delete blocks[prevBlockName];
+          cell.id = value;
+          storeCellsAsBlocks();
+          blockName = value;
+        }
+      }
+      idx++;
+    }
+    let cell = document.getElementById(blockName);
+    let block = blocks[blockName];
+    let mode = cell.getElementsByClassName('view_button')[0].style.display == 'none' ? 'view' : 'edit';
+    setCellContent(mode, cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+    document.getElementById('show_hidden_cells').onchange();
+  }
+  settingsList.appendChild(update);
+  
+  return settingsList;
+}
+
+function setCellMode(mode, cell, type, attributes, content) {
+  setHeaderMode(mode, cell);
+  setCellContent(mode, cell, type, attributes, content);
+}
+
+function onCellEdit() {
+    const blockName = this.parentElement.parentElement.id;
+    setCellMode('edit', this.parentElement.parentElement, blocks[blockName].attributes.type, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+    this.style.display = 'none';
+    this.parentElement.getElementsByClassName('view_button')[0].style.display = 'inline';
+}
+
+function onCellView() {
+    const blockName = this.parentElement.parentElement.id;
+    setCellMode('view', this.parentElement.parentElement, blocks[blockName].attributes.type, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+    this.style.display = 'none';
+    this.parentElement.getElementsByClassName('edit_button')[0].style.display = 'inline';
+}
+
+function createSettingsButton(blockName) {
+  let settingsButton = createSymbolButton('settings', 'Cell settings', 'settings_button');
+  settingsButton.classList.add('dropdown-toggle');
+  settingsButton.setAttribute('data-bs-toggle', 'dropdown');
+  settingsButton.setAttribute('aria-expanded', 'false');
+  let settingsContainer = document.createElement('div');
+  settingsContainer.className = 'dropdown';
+  settingsContainer.append(settingsButton, createSettingsList(blockName));
+  return settingsContainer;
+}
+
+function onCellDelete() {
+    const cell = this.parentElement.parentElement;
+    const seperator = cell.nextElementSibling;
+    const blockName = cell.id;
+    delete blocks[blockName];
+    cell.parentElement.removeChild(cell);
+    if(seperator && seperator.className == 'seperator') {
+      seperator.parentElement.removeChild(seperator);
+    }
+}
+
+function onCellUpdate() {
+    updateCell(this.parentElement.parentElement);
+}
+
+function onCellExecute() {
+    const cell = this.parentElement.parentElement;
+    const blockName = cell.id;
+    if(blocks[blockName].attributes && blocks[blockName].attributes.type != 'javascript') {
+      return;
+    }
+    updateCell(cell);
+    let output = getBlockTarget(blockName);
+    output.innerHTML = '';
+    new Function(blocks[blockName].content)();
+}
+
+function onCellLtr() {
+    const cell = this.parentElement.parentElement;
+    const block = blocks[cell.id];
+    updateCell(cell);
+    this.classList.add('active');
+    this.parentElement.getElementsByClassName('rtl_button')[0].classList.remove('active');
+    block.attributes.direction = 'ltr';
+    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+}
+
+function onCellRtl() {
+    const cell = this.parentElement.parentElement;
+    const block = blocks[cell.id];
+    updateCell(cell);
+    this.classList.add('active');
+    this.parentElement.getElementsByClassName('ltr_button')[0].classList.remove('active');
+    block.attributes.direction = 'rtl';
+    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+}
+
+function createTypeSelector(blockName) {
+  const typeSelector = document.createElement('select');
+  typeSelector.className = 'type_selector';
+  typeSelector.classList.add('custom-select', 'custom-select-sm');
+  let types = ['Markdown', 'JavaScript', 'HTML', 'CSS'];
+  for(let type of types) {
+    let option = document.createElement('option');
+    option.value = type.toLowerCase();
+    option.innerHTML = type;
+    typeSelector.appendChild(option);
+  }
+  typeSelector.value = blocks[blockName].attributes.type;
+  typeSelector.onchange = function() {
+    //let fromType = contentAttributes.type;
+    // convert content of block and cell to new type
+    const cell = typeSelector.parentElement.parentElement;
+    const block = blocks[cell.id];
+    block.attributes.type = typeSelector.value;
+    updateBlockContentFromCellContent(cell.id, cell.getElementsByClassName('cell_body')[0].value);
+    setHeaderMode('edit', cell);
+    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+  }
+  return typeSelector;
+}
+
+function createCellHeader(contentAttributes, blockName) {
+  let cellHeader = document.createElement('div');
+  cellHeader.classList.add('cell_header', 'btn-toolbar');
+  const editButton = createSymbolButton('edit', 'Edit cell content', 'edit_button', onCellEdit);
+  const viewButton = createSymbolButton('visibility', 'View', 'view_button', onCellView);
+  const settingsContainer = createSettingsButton(blockName);
+  const deleteButton = createSymbolButton('delete', 'Delete cell', 'delete_button', onCellDelete);
+  const updateButton = createSymbolButton('download', 'Update cell content', 'update_button', onCellUpdate);
+  const executionButton = createSymbolButton('play_arrow', 'Execute cell', 'execute_button', onCellExecute);
+  const typeSelector = createTypeSelector(blockName);
+  const ltr = createSymbolButton('format_textdirection_l_to_r', 'Set text direction to left-to-right', 'ltr_button', onCellLtr);
+  const rtl = createSymbolButton('format_textdirection_r_to_l', 'Set text direction to right-to-left', 'rtl_button', onCellRtl);
+
+  cellHeader.append(editButton, viewButton, settingsContainer, deleteButton, updateButton, executionButton, typeSelector, ltr, rtl);
+
+  viewButton.style.display = 'none';
+  if(contentAttributes.type != 'markdown') {
+    ltr.style.display = 'none';
+    rtl.style.display = 'none';
+  }
+  if(contentAttributes.type != 'javascript') {
+    executionButton.style.display = 'none';
+  }
+  return cellHeader;
+}
+
+function createCell(blockName, contentAttributes, cellContent) {
+  let cell = document.createElement('div');
+  cell.className = 'cell';
+  cell.id = blockName;
+  let cellHeader = createCellHeader(contentAttributes, blockName);
+  cell.appendChild(cellHeader);
+  setHeaderMode('view', cell);
+  return cell;
+}
+
+function hideCell(cell) {
+  cell.classList.add('hidden');
+  cell.nextElementSibling.classList.add('hidden');
+}
+
+function unhideCell(cell) {
+  cell.classList.remove('hidden');
+  cell.nextElementSibling.classList.remove('hidden');
+}
+
+function appendCell(blockName, contentAttributes, cellContent) {
+  let cell = createCell(blockName, contentAttributes, cellContent);
+
+  document.getElementById('notebook_content').appendChild(cell);
+  setCellContent('view', cell, contentAttributes.type, contentAttributes, cellContent);
+  if(blockName.startsWith('_') && !(blocks[blockName].attributes.hidden)) {
+    blocks[blockName].attributes.hidden = true;
+  }
+}
+
+function insertCell(seperator, blockName, attributes, cellContent)
+{
+  let cell = createCell(blockName, attributes, cellContent);
+  seperator.parentElement.insertBefore(cell, seperator);
+  setCellContent('view', cell, attributes.type, attributes, cellContent);
+}
+
+function generateBlockName() {
+  let i = 0;
+  while(blocks["cell_"+i] != undefined) {
+    i++;
+  }
+  return "cell_"+i;
+}
+
+function createAddCellButton(parent) {
+  let addCellButton = createSymbolButton('add', 'Insert new cell', 'add_cell_button');
+  addCellButton.onclick = function() {
+    let blockName = generateBlockName();
+    blocks[blockName] = {
+      attributes: {
+        type: 'javascript',
+      },
+      content: storableBlockContent('javascript', '\/\/ '+blockName+'\n\n')
+    };
+    insertSeperator(parent);
+    insertCell(parent, blockName, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
+  }
+  return addCellButton;
+}
+
+function createSeperator() {
+  let seperator = document.createElement('div');
+  seperator.className = 'seperator';
+  let add = createAddCellButton(seperator);
+  seperator.appendChild(add);
+  return seperator;
+}
+
+function insertSeperator(caller) {
+  let seperator = createSeperator();
+  caller.parentElement.insertBefore(seperator, caller);
+}
+
+function appendCellSeperator() {
+  let seperator = createSeperator();
+  document.getElementById('notebook_content').appendChild(seperator);
+}
+
+function renderCellsFromBlocks() {
+  appendCellSeperator();
+  for(let [blockName, block] of Object.entries(blocks)) {
+    appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
+    appendCellSeperator();
+  }
+  document.getElementById('show_hidden_cells').onchange();
+}
+
+function storeCellsAsBlocks() {
+  let cells = document.getElementsByClassName('cell');
+  let updatedBlocks = {};
+  for(let cell of cells) {
+    let blockName = cell.id;
+    let contentAttributes = blocks[blockName].attributes;
+    updatedBlocks[blockName] = {
+      attributes: contentAttributes,
+      content: blocks[blockName].content,
+    };
+  }
+  blocks = updatedBlocks;
+  dirty = true;
+}
+
+
+//+ _specificSetup
+function setOutput(text) {
+  document.getElementById("output").innerHTML=text;
+}
+
+function print(text) {
+  document.getElementById("output").innerHTML += text;
+}
+function save() {
+  if(dirty) {
+    alert("Entire notebook must be executed before saving.");
+    return;
+ }
+
+ let label = document.getElementById('label').value;
+ const data = "<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+ const link = document.createElement('a');
+ link.setAttribute('download', label+'.html');
+ link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+ link.style.display = 'none';
+ link.click();
+}
+
+//+ _initialize
+document.getElementById('show_hidden_cells').onchange = function() {
+  let unhide = document.getElementById('show_hidden_cells').checked;
+  for(let cell of document.getElementsByClassName('cell')) {
+    if(blocks[cell.id].attributes.hidden) {
+      unhide ? unhideCell(cell) : hideCell(cell);
+    }
+  }
+}
+
+renderCellsFromBlocks();
+let label = document.getElementById('label').value;
+document.title = label;
+document.getElementById('label').onchange = function() {
+  document.title = document.getElementById('label').value;
+}
+
+// cells should have mode (edit, view, hidden)
+// cells should have a button to move up
+// cells should have a button to move down
+// cells should have a button to delete
+// cells should have a button to insert above
+// cells should have a button to insert below
+// cells should have a button to duplicate
+//+ markdowntest {"type": "markdown"}
+// # Heading
+//+ computeCode
+{function print(string) {getBlockTarget('computeCode').innerHTML += string + '<br>';}
+// JS code here. Call print(text) to print output on the output panel
+}
+
+//+ interactiveDemo {"type": "html", "target": "interactiveDemo_output"}
+// <div id="demo" x-data="{Nx: 4}">
+// <label for="NxRange" class="form-label">Demo slider</label>
+// <input @input="Nx = $event.target.value" type="range" class="form-range" id="NxRange" min="2" max="10" x-bind:value="Nx"> 
+// <span x-text="Nx"></span>
+// </div>
+
+</script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>
