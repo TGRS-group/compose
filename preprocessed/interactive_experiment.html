@@ -837,8 +837,12 @@ document.getElementById('label').onchange = function() {
 // cells should have a button to insert above
 // cells should have a button to insert below
 // cells should have a button to duplicate
-//+ markdowntest {"type": "markdown"}
-// # Heading
+//+ markdowntest{"type":"markdown","direction":"rtl"}
+// # הסימולציה הבאה מדגימה את הדינמיקה של גוף מרובה חלקיקים הנופל מגובה נתון.
+//* ניתן לקבוע את מס' החלקיקים מהם מורכב הגוף, ואת גובה הנפילה ההתחלתי.
+//* ניתן להתחיל, לעצור, ולאתחל את הסימולציה באמצעות הכפתורים המתאימים.
+//* עם תחילת הרצת הסימולציה, מוצג תרשים העוקב אחר האנרגיות השונות במערכת.
+//
 //+ interactiveDemo {"type": "html", "target": "interactiveDemo_output"}
 // <div class="container">
 // <div class="row align-items-start">
@@ -857,7 +861,7 @@ document.getElementById('label').onchange = function() {
 // </div>
 // <div class="col">
 // <label for="Y0" >גובה התחלתי</label><br>
-// <input oninput="{y0 = Number(this.value);  setupRect(); calibrateSvg(); draw();}" type="range" id="Y0" min="0" max="10" value="1">
+// <input oninput="{y0 = Number(this.value);  setupRect(); calibrateSvg(); draw();}" type="range" id="Y0" min="0" max="10" value="3">
 // </div>
 // </div>
 // <div class="row align-items-start">
@@ -873,7 +877,7 @@ document.getElementById('label').onchange = function() {
 //+ rectangleSimulation {"type": "javascript"}
 {function print(string) {getBlockTarget('computeCode').innerHTML += string + '<br>';}
 draw_lines = true;
-y0=1;
+y0=3;
 L0=0.4;
 t=0
 Cr = 0.05;
