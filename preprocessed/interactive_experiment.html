@@ -863,14 +863,17 @@ document.getElementById('label').onchange = function() {
 // <button onclick="{loop = false;}" type="button" class="btn btn-primary material-symbols-outlined" style="font-size: 1.5em;">pause_circle</button>
 // </div>
 // <div class="col">
+// <span id="Nx_value"></span>
 // <label for="NxRange">חלקיקים לרוחב המלבן</label><br>
 // <input oninput="{Nx = this.value; setupRect(); calibrateSvg(); draw();}" type="range" id="NxRange" min="2" max="10" value="5" >
 // </div>
 // <div class="col">
+// <span id="Ny_value"></span>
 // <label for="NyRange" >חלקיקים לגובה המלבן</label><br>
 // <input oninput="{Ny = this.value;  setupRect(); calibrateSvg(); draw();}" type="range" id="NyRange" min="2" max="10" value="3">
 // </div>
 // <div class="col">
+// <span id="y0_value"></span>
 // <label for="Y0" >גובה התחלתי</label><br>
 // <input oninput="{y0 = Number(this.value);  setupRect(); calibrateSvg(); draw();}" type="range" id="Y0" min="0" max="10" value="3">
 // </div>
@@ -904,6 +907,9 @@ k = 1000;
 g = 9.8;
 dt = 0.0002;
 function setupRect(){
+  document.getElementById('Nx_value').innerHTML = Nx;
+  document.getElementById('Ny_value').innerHTML = Ny;
+  document.getElementById('y0_value').innerHTML = y0;
   i1=0
   ps=[]
   springs=[]
