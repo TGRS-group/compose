@@ -805,7 +805,18 @@ function save() {
  }
 
  let label = document.getElementById('label').value;
- const data = "<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+ const data = `
+  <!DOCTYPE html>
+  \<html lang="en"\>
+    ${document.head.outerHTML}
+    \<body>
+      \<div id="default"><\/div>
+      \<script id="compose">
+        ${stringifyBlocks(blocks)}
+      <\/script>
+      \<script src="https:\/\/cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"><\/script>
+    <\/body>
+  <\/html>`;
  const link = document.createElement('a');
  link.setAttribute('download', label+'.html');
  link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
@@ -977,7 +988,7 @@ function updateEs() {
   title: 'אנרגיה',
   color: {legend: true},
   marks: [
-    Plot.lineY(Ess, { x: 't', y: 'E' , stroke: 'Symbol'}),
+    Plot.lineY(Ess, { x: 't', y: 'E' , stroke: 'Symbol', tip: "x"}),
     ] });
     /*
     Plot.lineY(Es, { x: 't', y: 'Ek' , stroke: 'red'}),
