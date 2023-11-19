@@ -880,7 +880,15 @@ document.getElementById('label').onchange = function() {
 // </div>
 // <div class="row align-items-start">
 // <div class="col">
-// <svg width="500px" height="500px" viewBox="0 0 100 10" xmlns="http://www.w3.org/2000/svg" id="demo_viewport" class="cartesian" style="border: 1px solid #ddd;">
+// <svg width="500px" height="500px" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" id="demo_viewport" class="cartesian" style="border: 1px solid #ddd;">
+// <defs>
+// <pattern id="grid" width="1" height="1" patternUnits="userSpaceOnUse">
+// <path d="M 1 0 L 0 0 0 1" fill="none" stroke="#ccc" stroke-width="0.05"/>
+// </pattern>
+// </defs>
+// <rect x="-50%" y="0%" width="100%" height="100%" fill="url(#grid)" />
+// <g id="plot_body">
+// </g>
 // </svg>
 // </div>
 // <div class="col" id="plotTest">
@@ -956,9 +964,11 @@ function setupRect(){
 
 function calibrateSvg(){
   svg_output = document.getElementById('demo_viewport');
-  svg_output.innerHTML = '';
+  // svg_output.innerHTML = '';
   xlim(-Llim/2,Llim)
   ylim(0,Llim)
+  svg_output.getElementById('plot_body').innerHTML = '';
+  svg_output = document.getElementById('plot_body');
 }
 
 function draw() {
