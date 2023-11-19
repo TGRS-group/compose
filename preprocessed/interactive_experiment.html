@@ -935,6 +935,9 @@ function setupRect(){
   Esps = {x:[],y:[],type: 'scatter', name: 'אלסטית'}
   Ets = {x:[],y:[],type: 'scatter', name: 'כוללת'}
   EkCms = {x:[],y:[],type: 'scatter', name: 'קינטית מרכז מסה'}
+  Efloors = {x:[],y:[],type: 'scatter', name: 'אלסטית קרקע'}
+  Einters = {x:[],y:[],type: 'scatter', name: 'פנימית'}
+  Extrs = {x:[],y:[],type: 'scatter', name: 'מקרוסקופית'}
 
   for(let ly=0;ly<Ny;ly++){
   let p1={x:0,y:ly*L0,vx:0,vy:0,ax:0,ay:0}
@@ -993,11 +996,16 @@ function update_svg() {
 }
 
 function updateEs() {
-  EkCm = 0.5*m*(ps.map(p=>p.vx).reduce((a,b)=>a+b,0)**2+ps.map(p=>p.vy).reduce((a,b)=>a+b,0)**2)/ps.length;
+let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
+  EkCm = 0.5*m*(ps_u.map(p=>p.vx).reduce((a,b)=>a+b,0)**2+ps_u.map(p=>p.vy).reduce((a,b)=>a+b,0)**2)/ps.length;
   Ek = ps.map(p=>0.5*m*(p.vx**2+p.vy**2)).reduce((a,b)=>a+b,0);
-  Ep = ps.map(p=>m*g*p.y).reduce((a,b)=>a+b,0);
-  Esp = springs.map(s=>0.5*k*((s.L-Math.sqrt((ps[s.i1].x-ps[s.i2].x)**2+(ps[s.i1].y-ps[s.i2].y)**2))**2)).reduce((a,b)=>a+b,0);
-  Et = Ek+Ep+Esp;
+  Ep = ps_u.map(p=>m*g*p.y).reduce((a,b)=>a+b,0)-(Ny-1)*L0/2*m*g*Nx*Ny;
+  Esp = springs.map(s=>0.5*k*((s.L-Math.sqrt((ps_u[s.i1].x-ps_u[s.i2].x)**2+(ps_u[s.i1].y-ps_u[s.i2].y)**2))**2)).reduce((a,b)=>a+b,0);
+  Efloor = ps_u.map(p=>p.y<0?0.5*kfloor*(p.y**2):0).reduce((a,b)=>a+b,0);
+  Vcm = {x:ps.map(p=>p.vx).reduce((a,b)=>a+b,0)/ps.length,y:ps.map(p=>p.vy).reduce((a,b)=>a+b,0)/ps.length};
+  Einter = Esp + ps.map(p=>0.5*m*(p.vx-Vcm.x)**2+0.5*m*(p.vy-Vcm.y)**2).reduce((a,b)=>a+b,0);
+  Eextr = EkCm+Ep+Efloor;
+  Et = Ek+Ep+Esp+Efloor;
   EkCms.x.push(t);
   EkCms.y.push(EkCm);
   Eks.x.push(t);
@@ -1008,9 +1016,15 @@ function updateEs() {
   Esps.y.push(Esp);
   Ets.x.push(t);
   Ets.y.push(Et);
+  Efloors.x.push(t);
+  Efloors.y.push(Efloor);
+  Einters.x.push(t);
+  Einters.y.push(Einter);
+  Extrs.x.push(t);
+  Extrs.y.push(Eextr);
 
   const div = document.getElementById("plotTest");
-  let data = [EkCms, Eks, Eps, Esps, Ets];
+  let data = [Ets, Extrs, EkCms, Eps, Efloors, Einters, Eks, Esps];
   Plotly.react(div, data, {title: 'אנרגיה', datarevision: t});
 }
 
