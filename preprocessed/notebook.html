@@ -6,7 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Compose-notebook</title>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.2/dist/cdn.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
 </head>
@@ -15,17 +16,97 @@
 
 <script id="compose">
 //+ _mainHtml {"type": "html", "target": "default"}
+// <div x-data="{mode: 'view', button_class: 'btn btn-outline-dark btn-sm material-symbols-outlined', show_hidden_cells: false}">
+// <template id="cell_template">
+//  <div x-data="{block_name: 'undefined', cell_mode: 'view', cell_type: 'javascript', direction: 'ltr', content: '', target: ''}" class="cell" :id="block_name" x-show="show_hidden_cells || !hidden" x-init="if(cell_type == 'javascriptCell') window[block_name]()">
+//    <div x-show="mode == 'edit'" class="cell_headert btn-toolbar">
+//        <button x-show="cell_mode == 'view'" @click="cell_mode = 'edit'" title="Edit cell" type="button" :class="button_class">edit</button>
+//        <button x-show="cell_mode == 'edit'" @click="updateCell(block_name, content); cell_mode = 'view'" title="View" type="button" :class="button_class" >visibility</button>
+//        <div class="dropdown">
+//          <button data-bs-toggle="dropdown" aria-expanded="false" type="button" :class="button_class + ' dropdown-toggle settings_button'" title="Cell settings">settings</button>
+//          <ul class="dropdown-menu" x-data="{
+//              updated_block_name: block_name,
+//              updated_target: getBlockTargetName(block_name),
+//              updated_hidden: hidden,
+//              update_settings() {
+//                blocks[block_name].attributes.hidden = this.updated_hidden;
+//                hidden = this.updated_hidden;
+//                blocks[block_name].attributes.target = this.updated_target;
+//                updateBlockName(block_name, this.updated_block_name);
+//                block_name = this.updated_block_name;
+//                storeCellsAsBlocks();}
+//            }">
+//            <li class="dropdown-item">
+//              <div class="input-group input-group-sm">
+//                <span class="input-group-text">Name</span>
+//                <input type="text" class="form-control" x-model="updated_block_name"/>
+//              </div>
+//            </li>
+//            <li class="dropdown-item">
+//              <div class="input-group input-group-sm">
+//                <span class="input-group-text">Target</span>
+//                <input type="text" class="form-control" x-model="updated_target"/>
+//              </div>
+//            </li>
+//            <li class="dropdown-item">
+//              <div class="form-check">
+//                <label class="form-check-label">Hidden</label>
+//                <input type="checkbox" class="form-check-input" x-model="updated_hidden"/>
+//              </div>
+//            </li>
+//            <button class="btn btn-outline-dark btn-sm" @click="update_settings">Update</button>
+//          </ul>
+//        </div>
+//        <button @click="onCellDelete(block_name, $el.closest('.cell'))" title="Remove cell" type="button" :class="button_class" >delete</button>
+//        <button x-show="cell_mode == 'edit' && (cell_type == 'css' || ((cell_type == 'markdown' || cell_type == 'html') && !targetIsSelf(block_name)))" @click="onCellUpdate(block_name, content)" title="Update cell content" type="button" :class="button_class" >download</button>
+//        <button x-show="cell_mode == 'edit' && cell_type == 'javascript'" @click="onCellExecute(block_name, content)" title="Execute cell" type="button" :class="button_class" >play_arrow</button>
+//        <select x-show="cell_mode == 'edit'" class="type_selector custom-select custom-select-sm" @change="cell_type = $el.value; onTypeChange(block_name, cell_type, content)">
+//        <template x-for="type in ['Markdown', 'JavaScript', 'HTML', 'CSS']">
+//          <option x-bind:value="type.toLowerCase()" x-text="type" :selected="type.toLowerCase() == cell_type"></option>
+//        </template>
+//        </select>
+//        <button x-show="cell_mode == 'edit' && cell_type == 'markdown'" @click="direction = 'ltr'; onCellLtr(block_name)" title="Set text direction to left-to-right" type="button"
+//          :class="button_class + (direction == 'ltr' ? ' active' : '')" >format_textdirection_l_to_r</button>
+//        <button x-show="cell_mode == 'edit' && cell_type == 'markdown'" @click="direction = 'rtl'; onCellRtl(block_name)" title="Set text direction to right-to-left" type="button"
+//          :class="button_class + (direction == 'rtl' ? ' active' : '')" >format_textdirection_r_to_l</button>
+//    </div>
+//    <template x-if="cell_mode == 'view'">
+//      <div class="cell_body" x-show="mode == 'edit'" x-html="cellViewedContent(block_name)">
+//      </div>
+//    </template>
+//    <template x-if="cell_mode == 'edit'">
+//      <textarea x-data="{ resize: () => { $el.style.height = '5px'; $el.style.height = $el.scrollHeight + 'px' } }" x-model="content" class="cell_body" x-show="mode == 'edit'" :value="cellEditableContentFromBlockEditableContent(cell_type, content)" :style="{direction: cell_type == 'markdown' ? direction : 'ltr'}" x-init="resize()" @input="resize()">
+//      </textarea>
+//    </template>
+//    <template x-if="cell_type == 'markdown'">
+//      <div :id="block_name+'_output'" class="output" x-show="cell_mode == 'view'" :style="{direction: direction}" x-html="targetIsSelf(block_name) ? marked.parse(content) : ''"></div>
+//    </template>
+//    <template x-if="cell_type == 'html'">
+//      <div :id="block_name+'_output'" class="output" x-show="cell_mode == 'view'" x-html="targetIsSelf(block_name) ? content : ''"></div>
+//    </template>
+//    <template x-if="cell_type == 'javascript'">
+//      <div :id="block_name+'_output'" class="output"></div>
+//    </template>
+//  </div>
+// </template>
+// <template id="seperator_template">
+//  <div x-data="{block_name: ''}" class="seperator" x-show="mode == 'edit' && (show_hidden_cells || block_name == '' || !blocks[block_name].attributes.hidden)">
+//    <button @click="addCellAfter($el.closest('.seperator'))" title="Insert new cell" type="button" :class="button_class">add</button>
+//  </div>
+// </template>
 // <h4>Compose notebook </h4>
 // <div class="input-group">
+// <button x-show="mode == 'view'" x-on:click="mode = 'edit'" title="Edit notebook" type="button" :class="button_class" >edit</button>
+// <button x-show="mode == 'edit'" x-on:click="mode = 'view'" title="View" type="button" :class="button_class" >visibility</button>
 //  <input type="text" id="label" value="Untitled" title="Rename">
-// <div class="form-check">
-//  <input class="form-check-input" type="checkbox" value="" id="show_hidden_cells">
+// <div class="form-check" x-show="mode == 'edit'">
+//  <input class="form-check-input" type="checkbox" value="" id="show_hidden_cells" x-model="show_hidden_cells">
 //  <label class="form-check-label" for="show_hidden_cells">
 //  Show hidden cells
 //  </label>
 //  </div>
-// <button onclick="{storeCellsAsBlocks();execute()}" title="Run all cells" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >fast_forward</button>
-// <button onclick="{save()}" title="Download" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >save</button>
+// <button x-show="mode == 'edit'" onclick="{storeCellsAsBlocks();execute()}" title="Run all cells" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >fast_forward</button>
+// <button onclick="save()" title="Download" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >save</button>
 // </div>
 //  <div id="notebook_content">
 //  </div>
@@ -41,6 +122,7 @@
 //   vertical-align: middle;
 // }
 // body {font-family: Arial, sans-serif;}
+// svg.cartesian { transform: scaleY(-1); }
 
 //+ _initializationCode
 var dirty = false;
@@ -130,7 +212,7 @@ function store() {
 }
 
 function execute() {
-  Array.from(document.head.getElementsByTagName('style')).forEach(element => element.remove());
+  // Array.from(document.head.getElementsByTagName('style')).forEach(element => element.remove());
   currentScript = document.getElementById('compose').innerHTML;
   newScript = stringifyBlocks(blocks);
   document.body.innerHTML = '<div id="default"></div>';
@@ -165,6 +247,7 @@ for(let [blockName, block] of Object.entries(blocks)) {
   switch(block.attributes.type) {
     case 'html':
       let target = document.getElementById(block.attributes.target);
+      if(!target) break;
       if (block.attributes.direction == 'rtl') {
         target.style.direction = 'rtl';
       }
@@ -190,55 +273,59 @@ function Rect(x,y,width,height,strokeWidth) {
   rect.setAttribute("fill","none");
   rect.setAttribute("stroke","black");
   rect.setAttribute("stroke-width",strokeWidth || "1");
-  document.getElementById("svgOutput").appendChild(rect);
+  svg_output.appendChild(rect);
   return rect;
 }
 
-function Circle(cx,cy,r) {
+function Circle(cx,cy,r, c) {
   circle = document.createElementNS("http://www.w3.org/2000/svg","circle");
   circle.setAttribute("cx",cx);
   circle.setAttribute("cy",cy);
   circle.setAttribute("r",r);
-  circle.setAttribute("fill","none");
-  circle.setAttribute("stroke","black");
-  document.getElementById("svgOutput").appendChild(circle);
+  circle.setAttribute("stroke","none");
+  circle.setAttribute("fill",c);
+  svg_output.appendChild(circle);
   return circle;
 }
 
-function Line(x1,y1,x2,y2) {
+function Line([x1,y1],[x2,y2],c) {
   line = document.createElementNS("http://www.w3.org/2000/svg","line");
   line.setAttribute("x1",x1);
   line.setAttribute("y1",y1);
   line.setAttribute("x2",x2);
   line.setAttribute("y2",y2);
-  line.setAttribute("stroke","black");
-  document.getElementById("svgOutput").appendChild(line);
+  line.setAttribute("stroke",c);
+  line.setAttribute("stroke-width","0.01");
+  svg_output.appendChild(line);
   return line;
 }
 
 function xlim(xmin,width) {
-  ymin = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[1];
-  height = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[3];
-  document.getElementById("svgOutput").setAttribute("viewBox",xmin+" "+ymin+" "+width+" "+height);
+  ymin = svg_output.getAttribute("viewBox").split(" ")[1];
+  height = svg_output.getAttribute("viewBox").split(" ")[3];
+  svg_output.setAttribute("viewBox",xmin+" "+ymin+" "+width+" "+height);
 }
 
 function ylim(ymin,height) {
-  xmin = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[0];
-  width = document.getElementById("svgOutput").getAttribute("viewBox").split(" ")[2];
-  document.getElementById("svgOutput").setAttribute("viewBox",xmin+" "+ymin+" "+width+" "+height);
+  xmin = svg_output.getAttribute("viewBox").split(" ")[0];
+  width = svg_output.getAttribute("viewBox").split(" ")[2];
+  svg_output.setAttribute("viewBox",xmin+" "+ymin+" "+width+" "+height);
 }
 
 //+ _notebookSetup
 function getCellOutput(blockName) {
-  cell = document.getElementById(blockName);
-  return cell.getElementsByClassName('output')[0];
+  return document.getElementById(blockName+'_output');
+}
+
+function getBlockTargetName(blockName) {
+  if (targetIsSelf(blockName)) {
+    return blockName+'_output';
+  }
+  return blocks[blockName].attributes.target;
 }
 
 function getBlockTarget(blockName) {
-  if (targetIsSelf(blockName)) {
-    return getCellOutput(blockName);
-  }
-  return document.getElementById(blocks[blockName].attributes.target);
+  return document.getElementById(getBlockTargetName(blockName));
 }
 
 function javascriptBlockContentFromCellContent(blockName, editableContent) {
@@ -281,24 +368,6 @@ function cellEditableContentFromBlockEditableContent(type, editableContent) {
   return cellEditableContent;
 }
 
-function createCellBody(mode, attributes, editableContent, blockName) {
-  switch(mode) {
-    case 'edit':
-      cellBody = document.createElement('textarea');
-      cellBody.value = cellEditableContentFromBlockEditableContent(attributes.type, editableContent);
-      if(attributes.direction) {
-        cellBody.style.direction = attributes.direction;
-      }
-      break;
-    case 'view':
-      cellBody = document.createElement('div');
-      cellBody.innerHTML = cellViewedContent(blockName);
-      break;
-  }
-  cellBody.className = 'cell_body';
-  return cellBody;
-}
-
 function targetIsSelf(blockName) {
   return (!blocks[blockName].attributes.target) || blocks[blockName].attributes.target == blockName+'_output';
 }
@@ -319,64 +388,6 @@ function populateCellOutput(output, blockName) {
   }
 }
 
-function appendCellOutput(cell) {
-  const blockName = cell.id;
-  const block = blocks[blockName];
-  let output = document.createElement('div');
-  output.id = blockName + '_output';
-  output.className = 'output';
-  output.style.display = 'block';
-  cell.appendChild(output);
-  return output;
-}
-
-function setCellContent(mode, cell, type, attributes, editableContent) {
-  let blockName = cell.id;
-  let block = blocks[blockName];
-  if (cell.getElementsByClassName('cell_body').length > 0) {
-    cell.removeChild(cell.getElementsByClassName('cell_body')[0]);
-  }
-  let output = cell.getElementsByClassName('output')[0];
-  if(output && type != 'javascript') {
-    output.innerHTML = '';
-  } else {
-    output = appendCellOutput(cell);
-  }
-  if(!targetIsSelf(cell.id)) {
-    output = document.getElementById(block.attributes.target);
-  }
-  populateCellOutput(output, blockName);
-  let cellBody = createCellBody(mode, attributes, editableContent, cell.id);
-  cell.insertBefore(cellBody, getCellOutput(blockName));
-  if(mode == 'edit') {
-    cellBody.style.height = '1px';
-    cellBody.style.height = (cellBody.scrollHeight+5) + 'px';
-  }
-}
-
-function setHeaderMode(mode, cell) {
-  let cellHeader = cell.getElementsByClassName('cell_header')[0];
-  let ltrButton = cellHeader.getElementsByClassName('ltr_button')[0];
-  let rtlButton = cellHeader.getElementsByClassName('rtl_button')[0];
-  let executeButton = cellHeader.getElementsByClassName('execute_button')[0];
-  for (class_name of ['update_button', 'type_selector']) {
-    let button = cellHeader.getElementsByClassName(class_name)[0];
-    button.classList.toggle('hidden', mode != 'edit');
-  }
-  for (class_name of ['ltr_button', 'rtl_button']) {
-    let button = cellHeader.getElementsByClassName(class_name)[0];
-    button.classList.toggle('hidden', mode != 'edit' || !blocks[cell.id].attributes.type || blocks[cell.id].attributes.type != 'markdown');
-  }
-  executeButton.classList.toggle('hidden', mode != 'edit' || blocks[cell.id].attributes.type != 'javascript');
-  if (mode == 'edit' && blocks[cell.id].attributes.type && blocks[cell.id].attributes.type == 'markdown') {
-    ltrButton.classList.add('active');
-    if(blocks[cell.id].attributes.direction && blocks[cell.id].attributes.direction == 'rtl') {
-      rtlButton.classList.add('active');
-      ltrButton.classList.remove('active');
-    }
-  }
-}
-
 function updateBlockContentFromCellContent(blockName, cellContent) {
   let type = blocks[blockName].attributes.type;
   let blockContent = cellContent;
@@ -387,336 +398,80 @@ function updateBlockContentFromCellContent(blockName, cellContent) {
   dirty = true;
 }
 
-function updateCell(cell) {
-  let editableContent = cell.getElementsByClassName('cell_body')[0].value;
-  updateBlockContentFromCellContent(cell.id, editableContent);
+function onCellUpdate(blockName, content) {
+  updateCell(blockName, content);
+  if(!targetIsSelf(blockName)) {
+    populateCellOutput(getBlockTarget(blockName), blockName);
+  }
+}
+
+function updateCell(blockName, content) {
+  updateBlockContentFromCellContent(blockName, content);
   store();
 }
 
-
-function createSymbolButton(symbol, title, buttonClass, onclick) {
-  const iconButtonClasses = ['btn', 'btn-outline-dark', 'btn-sm', 'material-symbols-outlined'];
-//const iconButtonClasses = ['button', 'is-small', 'is-outlined', 'material-symbols-outlined'];
-  let button = document.createElement('button');
-  button.classList.add(buttonClass,...iconButtonClasses);
-  button.innerHTML = symbol;
-  button.title = title;
-  button.onclick = onclick;
-  return button;
-}
-
-const unpopulatedSettings ={
- 'Name': {'type': 'string', 'required': true},
-//  'Type': {'type': 'select', 'values': ['html', 'markdown', 'javascript', 'css'], 'required': true},
- 'Target': {'type': 'string'},
- 'Hidden': {'type': 'boolean'},
-}
-
-function createStringSettingItem(settingName, value) {
-  let settingInput = document.createElement('div');
-  settingInput.classList.add('input-group', 'input-group-sm');
-  let settingInputPrepend = document.createElement('span');
-  settingInputPrepend.className = 'input-group-text';
-  settingInputPrepend.innerHTML = settingName;
-  settingInput.appendChild(settingInputPrepend);
-  let settingInputText = document.createElement('input');
-  settingInputText.type = 'text';
-  settingInputText.className = 'form-control';
-  settingInputText.value = value;
-  settingInputText.setAttribute('size', '20');
-  settingInput.appendChild(settingInputText);
-  return settingInput;
-}
-
-function createBooleanSettingItem(settingName, value) {
-  let settingInput = document.createElement('div');
-  settingInput.className = 'form-check';
-  let settingInputCheck = document.createElement('input');
-  settingInputCheck.type = 'checkbox';
-  settingInputCheck.className = 'form-check-input';
-  settingInputCheck.checked = value;
-  let settingInputLabel = document.createElement('label');
-  settingInputLabel.className = 'form-check-label';
-  settingInputLabel.innerHTML = settingName;
-  settingInput.append(settingInputLabel, settingInputCheck);
-  return settingInput;
-}
-
-function createSelectSettingItem(settingName, values, selecetedValue) {
-  let settingInput = document.createElement('div');
-  settingInput.classList.add('input-group', 'input-group-sm');
-  let settingInputPrepend = document.createElement('span');
-  settingInputPrepend.className = 'input-group-text';
-  settingInputPrepend.innerHTML = settingName;
-  settingInput.appendChild(settingInputPrepend);
-  let settingInputSelect = document.createElement('select');
-  settingInputSelect.className = 'form-select';
-  for(let value of values) {
-    let settingInputOption = document.createElement('option');
-    settingInputOption.value = value;
-    settingInputOption.innerHTML = value;
-    if(value == selecetedValue) {
-      settingInputOption.selected = true;
-    }
-    settingInputSelect.appendChild(settingInputOption);
+function updateBlockName(blockName, newBlockName) {
+  if(blockName == newBlockName) {
+    return;
   }
-  settingInput.appendChild(settingInputSelect);
-  return settingInput;
-}
-
-function createSettingItem(settingName, setting) {
-  let settingItem = document.createElement('li');
-  settingItem.className = 'dropdown-item';
-  let settingInput = null;
-  switch(setting.type) {
-    case 'string':
-      settingInput = createStringSettingItem(settingName, setting.value);
-      break;
-    case 'boolean':
-      settingInput = createBooleanSettingItem(settingName, setting.value);
-      break;
-    case 'select':
-      settingInput = createSelectSettingItem(settingName, setting.values, setting.value);
-      break;
+  blocks[newBlockName] = blocks[blockName];
+  if(getBlockTargetName(blockName) == blockName+'_output') {
+    blocks[newBlockName].attributes.target = newBlockName+'_output';
   }
-  settingItem.appendChild(settingInput);
-  return settingItem;
+  delete blocks[blockName];
+  dirty = true;
 }
 
-function populateSettings(blockName) {
-  let populatedSettings = {};
-  for(let setting in unpopulatedSettings) {
-    populatedSettings[setting] = unpopulatedSettings[setting];
-    if(blocks[blockName].attributes && blocks[blockName].attributes[setting.toLowerCase()]) {
-      populatedSettings[setting].value = blocks[blockName].attributes[setting.toLowerCase()];
-    }
-  }
-  populatedSettings['Name'].value = blockName;
-  if(!blocks[blockName].attributes.target) {
-    populatedSettings['Target'].value = blockName+'_output';
-  }
-  if(!blocks[blockName].attributes.hidden) {
-    populatedSettings['Hidden'].value = blockName.startsWith('_');
-  }
-  return populatedSettings;
-}
-
-function getSettingValue(settingsList, settingIndex, settingType) {
-  let settingItem = settingsList.getElementsByClassName('dropdown-item')[settingIndex];
-  switch(settingType) {
-    case 'string':
-      return settingItem.getElementsByTagName('input')[0].value;
-    case 'boolean':
-      return settingItem.getElementsByTagName('input')[0].checked;
-    case 'select':
-      return settingItem.getElementsByTagName('select')[0].value;
-  }
-}
-
-function createSettingsList(blockName) {
-  let populatedSettings = populateSettings(blockName);
-  let settingsList = document.createElement('ul');
-  settingsList.className = 'dropdown-menu';
-  for( let setting in populatedSettings) {
-    let settingItem = createSettingItem(setting, populatedSettings[setting]);
-    settingsList.appendChild(settingItem);
-  }
-  let update = document.createElement('button');
-  update.classList.add('btn', 'btn-outline-dark', 'btn-sm');
-  update.innerHTML = 'Update';
-  update.onclick = function() {
-    let idx = 0;
-    for(let setting in populatedSettings) {
-      let value = getSettingValue(settingsList, idx, populatedSettings[setting].type);
-      if(setting != 'Name') {
-          blocks[blockName].attributes[setting.toLowerCase()] = value;
-      } else {
-        let cell = document.getElementById(blockName);
-        prevBlockName = cell.id;
-        if (prevBlockName != value) {
-          blocks[value] = blocks[prevBlockName];
-          delete blocks[prevBlockName];
-          cell.id = value;
-          storeCellsAsBlocks();
-          blockName = value;
-        }
-      }
-      idx++;
-    }
-    let cell = document.getElementById(blockName);
-    let block = blocks[blockName];
-    let mode = cell.getElementsByClassName('view_button')[0].style.display == 'none' ? 'view' : 'edit';
-    setCellContent(mode, cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
-    document.getElementById('show_hidden_cells').onchange();
-  }
-  settingsList.appendChild(update);
-  
-  return settingsList;
-}
-
-function setCellMode(mode, cell, type, attributes, content) {
-  setHeaderMode(mode, cell);
-  setCellContent(mode, cell, type, attributes, content);
-}
-
-function onCellEdit() {
-    const blockName = this.parentElement.parentElement.id;
-    setCellMode('edit', this.parentElement.parentElement, blocks[blockName].attributes.type, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
-    this.style.display = 'none';
-    this.parentElement.getElementsByClassName('view_button')[0].style.display = 'inline';
-}
-
-function onCellView() {
-    const blockName = this.parentElement.parentElement.id;
-    setCellMode('view', this.parentElement.parentElement, blocks[blockName].attributes.type, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
-    this.style.display = 'none';
-    this.parentElement.getElementsByClassName('edit_button')[0].style.display = 'inline';
-}
-
-function createSettingsButton(blockName) {
-  let settingsButton = createSymbolButton('settings', 'Cell settings', 'settings_button');
-  settingsButton.classList.add('dropdown-toggle');
-  settingsButton.setAttribute('data-bs-toggle', 'dropdown');
-  settingsButton.setAttribute('aria-expanded', 'false');
-  let settingsContainer = document.createElement('div');
-  settingsContainer.className = 'dropdown';
-  settingsContainer.append(settingsButton, createSettingsList(blockName));
-  return settingsContainer;
-}
-
-function onCellDelete() {
-    const cell = this.parentElement.parentElement;
+function onCellDelete(blockName, cell) {
     const seperator = cell.nextElementSibling;
-    const blockName = cell.id;
     delete blocks[blockName];
-    cell.parentElement.removeChild(cell);
+    cell.remove();
     if(seperator && seperator.className == 'seperator') {
-      seperator.parentElement.removeChild(seperator);
+      seperator.remove();
     }
 }
 
-function onCellUpdate() {
-    updateCell(this.parentElement.parentElement);
-}
-
-function onCellExecute() {
-    const cell = this.parentElement.parentElement;
-    const blockName = cell.id;
-    if(blocks[blockName].attributes && blocks[blockName].attributes.type != 'javascript') {
-      return;
-    }
-    updateCell(cell);
-    let output = getBlockTarget(blockName);
-    output.innerHTML = '';
+function onCellExecute(blockName, content) {
+    updateCell(blockName, content);
+    getBlockTarget(blockName).innerHTML = '';
     new Function(blocks[blockName].content)();
 }
 
-function onCellLtr() {
-    const cell = this.parentElement.parentElement;
-    const block = blocks[cell.id];
-    updateCell(cell);
-    this.classList.add('active');
-    this.parentElement.getElementsByClassName('rtl_button')[0].classList.remove('active');
-    block.attributes.direction = 'ltr';
-    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+function onCellLtr(blockName) {
+    blocks[blockName].attributes.direction = 'ltr';
 }
 
-function onCellRtl() {
-    const cell = this.parentElement.parentElement;
-    const block = blocks[cell.id];
-    updateCell(cell);
-    this.classList.add('active');
-    this.parentElement.getElementsByClassName('ltr_button')[0].classList.remove('active');
-    block.attributes.direction = 'rtl';
-    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
+function onCellRtl(blockName) {
+    blocks[blockName].attributes.direction = 'rtl';
 }
 
-function createTypeSelector(blockName) {
-  const typeSelector = document.createElement('select');
-  typeSelector.className = 'type_selector';
-  typeSelector.classList.add('custom-select', 'custom-select-sm');
-  let types = ['Markdown', 'JavaScript', 'HTML', 'CSS'];
-  for(let type of types) {
-    let option = document.createElement('option');
-    option.value = type.toLowerCase();
-    option.innerHTML = type;
-    typeSelector.appendChild(option);
-  }
-  typeSelector.value = blocks[blockName].attributes.type;
-  typeSelector.onchange = function() {
-    //let fromType = contentAttributes.type;
-    // convert content of block and cell to new type
-    const cell = typeSelector.parentElement.parentElement;
-    const block = blocks[cell.id];
-    block.attributes.type = typeSelector.value;
-    updateBlockContentFromCellContent(cell.id, cell.getElementsByClassName('cell_body')[0].value);
-    setHeaderMode('edit', cell);
-    setCellContent('edit', cell, block.attributes.type, block.attributes, editableBlockContent(block.attributes.type, block.content));
-  }
-  return typeSelector;
-}
-
-function createCellHeader(contentAttributes, blockName) {
-  let cellHeader = document.createElement('div');
-  cellHeader.classList.add('cell_header', 'btn-toolbar');
-  const editButton = createSymbolButton('edit', 'Edit cell content', 'edit_button', onCellEdit);
-  const viewButton = createSymbolButton('visibility', 'View', 'view_button', onCellView);
-  const settingsContainer = createSettingsButton(blockName);
-  const deleteButton = createSymbolButton('delete', 'Delete cell', 'delete_button', onCellDelete);
-  const updateButton = createSymbolButton('download', 'Update cell content', 'update_button', onCellUpdate);
-  const executionButton = createSymbolButton('play_arrow', 'Execute cell', 'execute_button', onCellExecute);
-  const typeSelector = createTypeSelector(blockName);
-  const ltr = createSymbolButton('format_textdirection_l_to_r', 'Set text direction to left-to-right', 'ltr_button', onCellLtr);
-  const rtl = createSymbolButton('format_textdirection_r_to_l', 'Set text direction to right-to-left', 'rtl_button', onCellRtl);
-
-  cellHeader.append(editButton, viewButton, settingsContainer, deleteButton, updateButton, executionButton, typeSelector, ltr, rtl);
-
-  viewButton.style.display = 'none';
-  if(contentAttributes.type != 'markdown') {
-    ltr.style.display = 'none';
-    rtl.style.display = 'none';
-  }
-  if(contentAttributes.type != 'javascript') {
-    executionButton.style.display = 'none';
-  }
-  return cellHeader;
+function onTypeChange(blockName, type, content) {
+  blocks[blockName].attributes.type = type;
+  updateBlockContentFromCellContent(blockName, content);
 }
 
 function createCell(blockName, contentAttributes, cellContent) {
-  let cell = document.createElement('div');
-  cell.className = 'cell';
-  cell.id = blockName;
-  let cellHeader = createCellHeader(contentAttributes, blockName);
-  cell.appendChild(cellHeader);
-  setHeaderMode('view', cell);
+  const direction = typeof contentAttributes.direction == 'undefined' ? 'ltr' : contentAttributes.direction;
+  const hidden = typeof contentAttributes.hidden == 'undefined' ? false : contentAttributes.hidden;
+  let cell = document.getElementById('cell_template').content.querySelector('div').cloneNode(true);
+  cell.setAttribute('x-data', `{
+    block_name: "${blockName}",
+    cell_mode: "view",
+    cell_type: "${contentAttributes.type}",
+    direction: "${direction}",
+    hidden: ${hidden},
+    content: "${JSON.stringify(cellContent).slice(1, -1)}",
+    }`
+    );
   return cell;
 }
 
-function hideCell(cell) {
-  cell.classList.add('hidden');
-  cell.nextElementSibling.classList.add('hidden');
-}
-
-function unhideCell(cell) {
-  cell.classList.remove('hidden');
-  cell.nextElementSibling.classList.remove('hidden');
-}
-
 function appendCell(blockName, contentAttributes, cellContent) {
-  let cell = createCell(blockName, contentAttributes, cellContent);
-
-  document.getElementById('notebook_content').appendChild(cell);
-  setCellContent('view', cell, contentAttributes.type, contentAttributes, cellContent);
   if(blockName.startsWith('_') && !(blocks[blockName].attributes.hidden)) {
     blocks[blockName].attributes.hidden = true;
   }
-}
-
-function insertCell(seperator, blockName, attributes, cellContent)
-{
-  let cell = createCell(blockName, attributes, cellContent);
-  seperator.parentElement.insertBefore(cell, seperator);
-  setCellContent('view', cell, attributes.type, attributes, cellContent);
+  let cell = createCell(blockName, contentAttributes, cellContent);
+  document.getElementById('notebook_content').appendChild(cell);
 }
 
 function generateBlockName() {
@@ -727,37 +482,32 @@ function generateBlockName() {
   return "cell_"+i;
 }
 
-function createAddCellButton(parent) {
-  let addCellButton = createSymbolButton('add', 'Insert new cell', 'add_cell_button');
-  addCellButton.onclick = function() {
-    let blockName = generateBlockName();
-    blocks[blockName] = {
-      attributes: {
-        type: 'javascript',
-      },
-      content: storableBlockContent('javascript', '\/\/ '+blockName+'\n\n')
-    };
-    insertSeperator(parent);
-    insertCell(parent, blockName, blocks[blockName].attributes, editableBlockContent(blocks[blockName].attributes.type, blocks[blockName].content));
-  }
-  return addCellButton;
+function addCellAfter(seperator) {
+  const newBlockName = generateBlockName();
+  blocks[newBlockName] = {
+    attributes: {
+      type: 'javascript',
+    },
+    content: storableBlockContent('javascript', '\/\/ '+newBlockName+'\n\n')
+  };
+  const newCell = createCell(newBlockName, blocks[newBlockName].attributes, editableBlockContent(blocks[newBlockName].attributes.type, blocks[newBlockName].content));
+  const newSeperator = createSeperator(newBlockName);
+  seperator.after(newCell, newSeperator);
+  Alpine.nextTick(() => {
+    storeCellsAsBlocks();
+  });
 }
 
-function createSeperator() {
-  let seperator = document.createElement('div');
-  seperator.className = 'seperator';
-  let add = createAddCellButton(seperator);
-  seperator.appendChild(add);
+function createSeperator(blockName = '') {
+  let seperator = document.getElementById('seperator_template').content.querySelector('div').cloneNode(true);
+  seperator.setAttribute('x-data', `{
+    block_name: '${blockName}'}`
+  );
   return seperator;
 }
 
-function insertSeperator(caller) {
-  let seperator = createSeperator();
-  caller.parentElement.insertBefore(seperator, caller);
-}
-
-function appendCellSeperator() {
-  let seperator = createSeperator();
+function appendCellSeperator(blockName = '') {
+  let seperator = createSeperator(blockName);
   document.getElementById('notebook_content').appendChild(seperator);
 }
 
@@ -765,9 +515,8 @@ function renderCellsFromBlocks() {
   appendCellSeperator();
   for(let [blockName, block] of Object.entries(blocks)) {
     appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
-    appendCellSeperator();
+    appendCellSeperator(blockName);
   }
-  document.getElementById('show_hidden_cells').onchange();
 }
 
 function storeCellsAsBlocks() {
@@ -785,7 +534,6 @@ function storeCellsAsBlocks() {
   dirty = true;
 }
 
-
 //+ _specificSetup
 function setOutput(text) {
   document.getElementById("output").innerHTML=text;
@@ -801,7 +549,18 @@ function save() {
  }
 
  let label = document.getElementById('label').value;
- const data = "<!DOCTYPE html>\n"+document.documentElement.outerHTML;
+ const data = `
+  <!DOCTYPE html>
+  \<html lang="en"\>
+    ${document.head.outerHTML}
+    \<body>
+      \<div id="default"><\/div>
+      \<script id="compose">
+        ${stringifyBlocks(blocks)}
+      <\/script>
+      \<script src="https:\/\/cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"><\/script>
+    <\/body>
+  <\/html>`;
  const link = document.createElement('a');
  link.setAttribute('download', label+'.html');
  link.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
@@ -810,35 +569,26 @@ function save() {
 }
 
 //+ _initialize
-document.getElementById('show_hidden_cells').onchange = function() {
-  let unhide = document.getElementById('show_hidden_cells').checked;
-  for(let cell of document.getElementsByClassName('cell')) {
-    if(blocks[cell.id].attributes.hidden) {
-      unhide ? unhideCell(cell) : hideCell(cell);
-    }
-  }
+if(window.Alpine) {
+Alpine.nextTick(() => {
+  renderCellsFromBlocks();
+});
+} else {
+  document.addEventListener('alpine:init', () => {
+    renderCellsFromBlocks();
+  });
 }
-
-renderCellsFromBlocks();
 let label = document.getElementById('label').value;
 document.title = label;
 document.getElementById('label').onchange = function() {
   document.title = document.getElementById('label').value;
 }
 
-// cells should have mode (edit, view, hidden)
 // cells should have a button to move up
 // cells should have a button to move down
-// cells should have a button to delete
-// cells should have a button to insert above
-// cells should have a button to insert below
 // cells should have a button to duplicate
-//+ markdowntest {"type": "markdown"}
-// # Heading
-//+ computeCode
-{function print(string) {getBlockTarget('computeCode').innerHTML += string + '<br>';}
-// JS code here. Call print(text) to print output on the output panel
-}
+//+ heading {"type":"markdown","direction":"ltr","hidden":false}
+// # Notebook heading
 
 </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
