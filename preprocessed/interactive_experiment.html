@@ -15,10 +15,10 @@
 <div id="default"></div>
 
 <script id="compose">
-//+ _mainHtml {"type": "html", "target": "default"}
-// <div x-data="{mode: 'view', button_class: 'btn btn-outline-dark btn-sm material-symbols-outlined', show_hidden_cells: false}">
+//+ _mainHtml {"type": "html", "target": "default", "page": 0}
+// <div x-data="{mode: 'view', button_class: 'btn btn-outline-dark btn-sm material-symbols-outlined', show_hidden_cells: false, paged: false, current_page: 1}">
 // <template id="cell_template">
-//  <div x-data="{block_name: 'undefined', cell_mode: 'view', cell_type: 'javascript', direction: 'ltr', content: '', target: ''}" class="cell" :id="block_name" x-show="show_hidden_cells || !hidden" x-init="if(cell_type == 'javascriptCell') window[block_name]()">
+//  <div x-data="{block_name: 'undefined', cell_mode: 'view', cell_type: 'javascript', direction: 'ltr', content: '', target: ''}" class="cell" :id="block_name" x-show="(!paged || paged && page == current_page) && (show_hidden_cells || !hidden)" x-init="if(cell_type == 'javascriptCell') window[block_name]()">
 //    <div x-show="mode == 'edit'" class="cell_headert btn-toolbar">
 //        <button x-show="cell_mode == 'view'" @click="cell_mode = 'edit'" title="Edit cell" type="button" :class="button_class">edit</button>
 //        <button x-show="cell_mode == 'edit'" @click="updateCell(block_name, content); cell_mode = 'view'" title="View" type="button" :class="button_class" >visibility</button>
@@ -28,9 +28,12 @@
 //              updated_block_name: block_name,
 //              updated_target: getBlockTargetName(block_name),
 //              updated_hidden: hidden,
+//              updated_page: page,
 //              update_settings() {
 //                blocks[block_name].attributes.hidden = this.updated_hidden;
 //                hidden = this.updated_hidden;
+//                blocks[block_name].attributes.page = this.updated_page;
+//                page = this.updated_page;
 //                blocks[block_name].attributes.target = this.updated_target;
 //                updateBlockName(block_name, this.updated_block_name);
 //                block_name = this.updated_block_name;
@@ -46,6 +49,12 @@
 //              <div class="input-group input-group-sm">
 //                <span class="input-group-text">Target</span>
 //                <input type="text" class="form-control" x-model="updated_target"/>
+//              </div>
+//            </li>
+//            <li class="dropdown-item">
+//              <div class="input-group input-group-sm">
+//                <span class="input-group-text">Page</span>
+//                <input type="number" class="form-control" x-model="updated_page"/>
 //              </div>
 //            </li>
 //            <li class="dropdown-item">
@@ -90,7 +99,7 @@
 //  </div>
 // </template>
 // <template id="seperator_template">
-//  <div x-data="{block_name: ''}" class="seperator" x-show="mode == 'edit' && (show_hidden_cells || block_name == '' || !blocks[block_name].attributes.hidden)">
+//  <div x-data="{block_name: ''}" class="seperator" x-show="mode == 'edit' && (!paged || paged && current_page == page) && (show_hidden_cells || block_name == '' || !blocks[block_name].attributes.hidden)">
 //    <button @click="addCellAfter($el.closest('.seperator'))" title="Insert new cell" type="button" :class="button_class">add</button>
 //  </div>
 // </template>
@@ -105,6 +114,11 @@
 //  Show hidden cells
 //  </label>
 //  </div>
+// <button x-show="!paged" @click="paged = true" title="Switch to paged view" type="button" :class="button_class" >auto_stories</button>
+// <button x-show="paged" @click="paged = false" title="Switch to pageless view" type="button" :class="button_class" >pageless</button>
+// <button x-show="paged" @click="current_page = Math.max(current_page-1, 0)" title="Previous page" type="button" :class="button_class" >arrow_back_ios</button>
+// <span x-show="paged" class="input-group-text" x-text="current_page">Page size</span>
+// <button x-show="paged" @click="current_page = Math.min(current_page+1,total_pages())" title="Next page" type="button" :class="button_class" >arrow_forward_ios</button>
 // <button x-show="mode == 'edit'" onclick="{storeCellsAsBlocks();execute()}" title="Run all cells" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >fast_forward</button>
 // <button onclick="save()" title="Download" type="button" class="btn btn-outline-dark btn-sm material-symbols-outlined" >save</button>
 // </div>
@@ -460,6 +474,7 @@ function createCell(blockName, contentAttributes, cellContent) {
     cell_type: "${contentAttributes.type}",
     direction: "${direction}",
     hidden: ${hidden},
+    page: ${getBlockPage(blockName)},
     content: "${JSON.stringify(cellContent).slice(1, -1)}",
     }`
     );
@@ -498,11 +513,14 @@ function addCellAfter(seperator) {
   });
 }
 
+function getBlockPage(blockName) {
+  return typeof blocks[blockName].attributes.page == 'undefined' ? 0 : blocks[blockName].attributes.page;
+}
+
 function createSeperator(blockName = '') {
   let seperator = document.getElementById('seperator_template').content.querySelector('div').cloneNode(true);
-  seperator.setAttribute('x-data', `{
-    block_name: '${blockName}'}`
-  );
+  let page = blockName == '' ? 0 : getBlockPage(blockName);
+  seperator.setAttribute('x-data', `{block_name: '${blockName}', page: ${page}}`);
   return seperator;
 }
 
@@ -517,6 +535,16 @@ function renderCellsFromBlocks() {
     appendCell(blockName, block.attributes, editableBlockContent(block.attributes.type, block.content));
     appendCellSeperator(blockName);
   }
+}
+
+function total_pages() {
+  let pages = 0;
+  for(let [blockName, block] of Object.entries(blocks)) {
+    if(block.attributes.page > pages) {
+      pages = block.attributes.page;
+    }
+  }
+  return pages;
 }
 
 function storeCellsAsBlocks() {
@@ -587,13 +615,13 @@ document.getElementById('label').onchange = function() {
 // cells should have a button to move up
 // cells should have a button to move down
 // cells should have a button to duplicate
-//+ intro{"type":"markdown","direction":"rtl"}
+//+ intro{"type":"markdown","direction":"rtl", "page": 1}
 // # הסימולציה הבאה מדגימה את הדינמיקה של גוף מרובה חלקיקים הנופל מגובה נתון.
 //* ניתן לקבוע את מס' החלקיקים מהם מורכב הגוף, ואת גובה הנפילה ההתחלתי.
 //* ניתן להתחיל, לעצור, ולאתחל את הסימולציה באמצעות הכפתורים המתאימים.
 //* עם תחילת הרצת הסימולציה, מוצג תרשים העוקב אחר האנרגיות השונות במערכת.
 //
-//+ fallingRectSim {"type": "html", "target": "fallingRectSim_output"}
+//+ fallingRectSim {"type": "html", "target": "fallingRectSim_output", "page": 1}
 // <div class="container">
 // <div class="row align-items-start">
 // <div class="col">
@@ -637,7 +665,7 @@ document.getElementById('label').onchange = function() {
 // </div>
 // </div>
 
-//+ rectangleSimulation {"type": "javascriptCell"}
+//+ rectangleSimulation {"type": "javascriptCell", "page": 1}
 function rectangleSimulation(){function print(string) {getBlockTarget('computeCode').innerHTML += string + '<br>';}
 draw_lines = true;
 y0=3;
@@ -833,7 +861,7 @@ setupRect();
 calibrateSvg();
 draw();
 }
-//+ plotting {"type": "javascript"}
+//+ plotting {"type": "javascript", "page": 1}
 
 </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>

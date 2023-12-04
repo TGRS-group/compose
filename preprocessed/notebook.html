@@ -57,7 +57,6 @@
 //                <input type="number" class="form-control" x-model="updated_page"/>
 //              </div>
 //            </li>
-
 //            <li class="dropdown-item">
 //              <div class="form-check">
 //                <label class="form-check-label">Hidden</label>
@@ -521,8 +520,7 @@ function getBlockPage(blockName) {
 function createSeperator(blockName = '') {
   let seperator = document.getElementById('seperator_template').content.querySelector('div').cloneNode(true);
   let page = blockName == '' ? 0 : getBlockPage(blockName);
-  seperator.setAttribute('x-data', `{block_name: '${blockName}', page: ${page}}`
-  );
+  seperator.setAttribute('x-data', `{block_name: '${blockName}', page: ${page}}`);
   return seperator;
 }
 
