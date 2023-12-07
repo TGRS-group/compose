@@ -487,6 +487,11 @@ function appendCell(blockName, contentAttributes, cellContent) {
   }
   let cell = createCell(blockName, contentAttributes, cellContent);
   document.getElementById('notebook_content').appendChild(cell);
+  Alpine.nextTick(() => {
+    if(!targetIsSelf(blockName)) {
+      populateCellOutput(getBlockTarget(blockName), blockName);
+    }
+  });
 }
 
 function generateBlockName() {
@@ -611,7 +616,6 @@ document.title = label;
 document.getElementById('label').onchange = function() {
   document.title = document.getElementById('label').value;
 }
-
 //+ page_1_intro {"type":"markdown","direction":"rtl", "page": 1}
 // # הדינמיקה של גוף קשיח שנופל מגובה נתון לרצפה
 // ### ראשית נסו לשער ולצייר:
@@ -626,6 +630,8 @@ document.getElementById('label').onchange = function() {
 // 
 // לאחר שעניתם על שאלות אלו - לחצו על כפתור המעבר לעמוד הבא (חץ ימינה) שבראש העמוד.
 //
+
+
 //+ fallingBodySim {"type": "html", "target": "fallingBodySim_output", "page": 1}
 // <div class="container">
 // <div class="row align-items-start">
@@ -659,7 +665,6 @@ document.getElementById('label').onchange = function() {
 // </div>
 // </div>
 // </div>
-
 //+ singleBodySimulation {"type": "javascriptCell", "page": 1}
 function singleBodySimulation(){function print(string) {getBlockTarget('singleBodySimulation').innerHTML += string + '<br>';}
 let y0=3;
