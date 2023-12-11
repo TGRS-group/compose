@@ -103,11 +103,10 @@
 //    <button @click="addCellAfter($el.closest('.seperator'))" title="Insert new cell" type="button" :class="button_class">add</button>
 //  </div>
 // </template>
-// <h4>Compose notebook </h4>
 // <div class="input-group">
 // <button x-show="mode == 'view'" x-on:click="mode = 'edit'" title="Edit notebook" type="button" :class="button_class" >edit</button>
 // <button x-show="mode == 'edit'" x-on:click="mode = 'view'" title="View" type="button" :class="button_class" >visibility</button>
-//  <input type="text" id="label" value="חקר שימור ופיזור אנרגיה במערכות מרובות חלקיקים" title="Rename">
+//  <input type="text" id="label" value="חקר שימור ופיזור אנרגיה במערכות מרובות חלקיקים" title="Rename" size="45" style="direction: rtl">
 // <div class="form-check" x-show="mode == 'edit'">
 //  <input class="form-check-input" type="checkbox" value="" id="show_hidden_cells" x-model="show_hidden_cells">
 //  <label class="form-check-label" for="show_hidden_cells">
@@ -618,16 +617,17 @@ document.getElementById('label').onchange = function() {
 }
 
 //+ fallingBodySim {"type": "html", "target": "fallingBodySim_output", "page": 1}
-// <div id="page_container">
+// <div id="page_container" x-data="{plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined'}">
 //  <div class="row">
 //    <div class="col">
 //      <div class="container">
 //        <div class="row align-items-start">
 //          <div class="col">
-//            <button onclick="setupBody(); calibrateBodySvg(); drawBody();" type="button" title="התחל מחדש" class="btn btn-primary material-symbols-outlined" style="font-size: 1.5em;">refresh</button>
-//            <button onclick="set_delay_factor(1); startBody();" type="button" title="הפעל" class="btn btn-primary material-symbols-outlined" style="font-size: 1.5em;">play_circle</button>
-//            <button onclick="pause_loop()" type="button" title="עצור" class="btn btn-primary material-symbols-outlined" style="font-size: 1.5em;">pause_circle</button>
-//            <button onclick="set_delay_factor(5); startBody();" type="button" title="הילוך איטי" class="btn btn-primary material-symbols-outlined" style="font-size: 1.5em;">slow_motion_video</button>
+//            <button onclick="setupBody(); calibrateBodySvg(); drawBody();" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
+//            <button onclick="set_delay_factor(1); startBody();" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
+//            <button onclick="pause_loop()" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
+//            <button onclick="set_delay_factor(5); startBody();" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
+//            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot ? ' active' : '')" @click="plot = !plot" style="font-size: 1.5em;">show_chart</a>
 //          </div>
 //          <div class="col">
 //            <span> [מטר] </span>
@@ -649,25 +649,28 @@ document.getElementById('label').onchange = function() {
 //        <rect x="-50%" y="0%" width="100%" height="1%" fill="black" />
 //      </svg>
 //    </div>
-//    <div class="col-4" id="plotBody" style="max-height: 550px;">
+//    <div class="col-5" style="max-height: 550px;">
+//      <div id="plotBody" style="max-height: 550px;" x-show="plot">
+//      </div>
 //    </div>
 //    <div class="col" id="page_1_text">
 //    </div>
 //  </div>
 // </div>
 //+ page_1_intro {"type":"markdown","direction":"rtl", "page": 1, "target": "page_1_text"}
-// ### הדינמיקה של גוף קשיח שנופל מגובה נתון לרצפה
-// 
-// * ראשית נסו לשער ולצייר:
+//### הדינמיקה של גוף קשיח שנופל מגובה נתון לרצפה
+// * הפעילו את הסימולציה על ידי לחיצה על כפתור ההרצה הכחול <span :class="sim_button">play_circle</span> וצפו בתנועת הכדור הקופץ על הרצפה.
+// *  נסו לשער ולצייר:
 //    1.  מהי האנרגיה הפוטנציאלית הכובדית במערכת לאורך זמן?
 //    2.  מהי האנרגיה הקינטית במערכת לאורך זמן?
 //    3.  האם האנרגיה הכוללת במערכת נשמרת?
-// * כעת לחצו על כפתור ההרצה הכחול (play) בחלונית וצפו בתנועת הגוף ובגרף המתאר את האנרגיות הקינטית, הפוטנציאלית הכובדית, והכוללת.
+// * אפסו את הסימולציה על ידי לחיצה על כפתור האתחול <span :class="sim_button">refresh</span>.
+// * הפעילו את תצוגת גרף האנרגיה כתלות בזמן על ידי לחיצה על כפתור הגרף <span :class="sim_button">show_chart</span>.
+// * הריצו שוב את הסימולציה וצפו בתנועת הגוף ובמקביל בגרף המתאר את האנרגיות הקינטית, הפוטנציאלית הכובדית, והכוללת.
 //    1. האם התצפית תואמת את השערותיכם? פרטו
 // 
-// לאחר שעניתם על שאלות אלו - לחצו על כפתור המעבר לעמוד הבא (חץ ימינה) שבראש העמוד.
+// לאחר שעניתם על שאלות אלו - לחצו על כפתור המעבר לעמוד הבא <span :class="button_class">arrow_forward_ios</span> שבראש העמוד.
 //
-
 //+ singleBodySimulation {"type": "javascriptCell", "page": 1}
 function singleBodySimulation(){function print(string) {getBlockTarget('singleBodySimulation').innerHTML += string + '<br>';}
 let y0=3;
@@ -701,6 +704,9 @@ setupBody = function(input_y0) {
   loop = false;
   p = {x:0,y:y0,vx:0,vy:0,ax:0,ay:0};
   Llim=y0+0.2
+  const div = document.getElementById("plotBody");
+  let data = [Ets, Eps, Eks, Efloors];
+  Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*1.1]}});
 }
 
 calibrateBodySvg = function() {
@@ -737,7 +743,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
 
   const div = document.getElementById("plotBody");
   let data = [Ets, Eps, Eks, Efloors];
-  Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]'}});
+  Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*1.1]}});
 }
 
 function updateCircle(C, x, y) {
