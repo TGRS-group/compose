@@ -727,7 +727,6 @@ function update_svg() {
 }
 
 function updateEs() {
-let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   Ek = 0.5*m*(p.vx**2+p.vy**2);
   Ep = m*g*p.y;
   Efloor = p.y<0?0.5*kfloor*(p.y**2):0;
@@ -759,19 +758,18 @@ function stepBody() {
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-const loopstep = async () => {
+const loopstep = async (step = stepBody, draw = update_svg, plot= updateEs, kmax = kfloor) => {
   let dt_refresh = 0.01;
   let dt_factor = 0.01;
-  let kmax=Math.max(k,kfloor)
   dt=2*Math.PI*Math.sqrt(m)/Math.sqrt(kmax)*dt_factor 
   steps_per_refresh=dt_refresh/(dt*delay_factor);
   while(loop) {
     for(let l=0;l<steps_per_refresh;l++){
-     stepBody()
+     step()
     }
     await delay(dt_refresh*1000);
-    update_svg();
-    updateEs();
+    draw();
+    plot();
     t+=dt_refresh/delay_factor;
   }
 }
@@ -796,7 +794,8 @@ drawBody();
 // <button onclick="{loop = true; delay_factor=1; start();}" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
 // <button onclick="{loop = false;}" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
 // <button onclick="{loop = true; delay_factor=5; start();}" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
-//            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot ? ' active' : '')" @click="plot = !plot" style="font-size: 1.5em;">show_chart</a>
+//            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot == 'line' ? ' active' : '')" @click="plot = plot == 'line' ? '' : 'line'" style="font-size: 1.5em;">show_chart</a>
+//            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot == 'bar' ? ' active' : '')" @click="plot = plot == 'bar' ? '' : 'bar'" style="font-size: 1.5em;">bar_chart</a>
 //          </div>
 //          <div class="col">
 // <div class="col">
@@ -831,7 +830,9 @@ drawBody();
 //      </svg>
 //    </div>
 //    <div class="col-5" style="max-height: 550px;">
-//      <div id="plotRect" style="max-height: 550px;" x-show="plot">
+//      <div id="plotRect" style="max-height: 550px;" x-show="plot == 'line'">
+//      </div>
+//      <div id="barRect" style="max-height: 550px;" x-show="plot == 'bar'">
 //      </div>
 //    </div>
 //    <div class="col" id="page_2_text">
@@ -857,21 +858,21 @@ drawBody();
 
 //+ rectangleSimulation {"type": "javascriptCell", "page": 2}
 function rectangleSimulation(){function print(string) {getBlockTarget('computeCode').innerHTML += string + '<br>';}
-draw_lines = true;
-y0=3;
-L0=0.4;
-t=0
-Cr = 0.05;
-ps=[]
-springs=[]
+let draw_lines = true;
+let y0=3;
+let L0=0.4;
+let t=0
+let Cr = 0.05;
+let ps=[]
+let springs=[]
 Nx = 7;
 Ny = 6;
-kfloor = 100000;
-m = 0.01;
-k = 1000;
-g = 9.8;
-dt = 0.0002;
-delay_factor = 1;
+let kfloor = 100000;
+let m = 0.01;
+let k = 1000;
+let g = 9.8;
+let dt = 0.0002;
+let delay_factor = 1;
 
 setupRect = function() {
   document.getElementById('Nx_value').innerHTML = Nx;
@@ -883,7 +884,7 @@ setupRect = function() {
   Eps = {x:[],y:[],type: 'scatter', name: 'פוטנציאלית',marker: {color: '#ff7f0e'}}
   Eks = {x:[],y:[],type: 'scatter', name: 'קינטית חלקיקים', visible: 'legendonly'}
   Esps = {x:[],y:[],type: 'scatter', name: 'אלסטית', visible: 'legendonly'}
-  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', visible: 'legendonly'}
+  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', visible: 'legendonly', marker: {color: '#d62728'}}
   EkCms = {x:[],y:[],type: 'scatter', name: 'קינטית מרכז מסה'}
   Efloors = {x:[],y:[],type: 'scatter', name: 'אלסטית קרקע', visible: 'legendonly'}
   Einters = {x:[],y:[],type: 'scatter', name: 'פנימית', visible: 'legendonly'}
@@ -919,11 +920,24 @@ setupRect = function() {
   const div = document.getElementById("plotRect");
   let data = [Ets, Extrs, EkCms, Eps, Eks, Efloors, Einters, EKints, Esps];
   Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  const bar = document.getElementById("barRect");
+  let data2 = [{
+  x: [
+  'כוללת',
+  'כבידה (גוף)',
+  'תנועה (גוף)',
+  'תנועה (חלקיקים)',
+  'אלסטית (חלקיקים)',
+  'פנימית',
+  ],
+  y: [0,0,0,0,0,0],
+  type: 'bar',
+  }];
+  Plotly.react(bar, data2, {title: 'התפלגות אנרגיה', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
 }
 
 calibrateSvg = function() {
   svg_output = document.getElementById('rect_body');
-  // svg_output.innerHTML = '';
   xlim(-Llim/2,Llim)
   ylim(-Llim*0.01,Llim)
   svg_output.getElementById('plot_body').innerHTML = '';
@@ -966,7 +980,6 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   Eps.x.push(t);
   Eps.y.push(Ep);
   Esps.x.push(t);
-  Esps.y.push(Esp);
   Ets.x.push(t);
   Ets.y.push(Et);
   Efloors.x.push(t);
@@ -981,6 +994,20 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   const div = document.getElementById("plotRect");
   let data = [Ets, Extrs, EkCms, Eps, Eks, Efloors, Einters, EKints, Esps];
   Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  const bar = document.getElementById("barRect");
+  let data2 = [{
+  x: [
+  'כוללת',
+  'כבידה (גוף)',
+  'תנועה (גוף)',
+  'תנועה (חלקיקים)',
+  'אלסטית (חלקיקים)',
+  'פנימית',
+  ],
+  y: [Et, Ep, EkCm, EKint, Esp, Einter],
+  type: 'bar'
+  }];
+  Plotly.react(bar, data2, {title: 'אנרגיה כוללת', datarevision: t, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
 }
 
 function updateCircle(C, x, y) {
