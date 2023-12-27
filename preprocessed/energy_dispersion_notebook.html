@@ -810,7 +810,7 @@ drawBody();
 // </div>
 // <div class="col">
 // <span> [מטר] </span>
-// <span id="y0_value"></span>
+// <span id="y0_rect_value"></span>
 // <label for="Y0" >גובה התחלתי</label><br>
 // <input oninput="{y0 = Number(this.value);  setupRect(); calibrateSvg(); draw();}" type="range" id="Y0" min="0" max="10" value="3">
 // </div>
@@ -859,7 +859,7 @@ drawBody();
 //+ rectangleSimulation {"type": "javascriptCell", "page": 2}
 function rectangleSimulation(){function print(string) {getBlockTarget('computeCode').innerHTML += string + '<br>';}
 let draw_lines = true;
-let y0=3;
+y0=3;
 let L0=0.4;
 let t=0
 let Cr = 0.05;
@@ -873,11 +873,12 @@ let k = 1000;
 let g = 9.8;
 let dt = 0.0002;
 let delay_factor = 1;
+let v=0;
 
 setupRect = function() {
   document.getElementById('Nx_value').innerHTML = Nx;
   document.getElementById('Ny_value').innerHTML = Ny;
-  document.getElementById('y0_value').innerHTML = y0;
+  document.getElementById('y0_rect_value').innerHTML = y0;
   i1=0
   ps=[]
   springs=[]
@@ -920,6 +921,9 @@ setupRect = function() {
   const div = document.getElementById("plotRect");
   let data = [Ets, Extrs, EkCms, Eps, Eks, Efloors, Einters, EKints, Esps];
   Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  Ep = ps.map(p=>m*g*p.y).reduce((a,b)=>a+b,0)-(Ny-1)*L0/2*m*g*Nx*Ny;
+  console.log(Ep)
+  v+=1
   const bar = document.getElementById("barRect");
   let data2 = [{
   x: [
@@ -930,10 +934,10 @@ setupRect = function() {
   'אלסטית (חלקיקים)',
   'פנימית',
   ],
-  y: [0,0,0,0,0,0],
+  y: [Ep,Ep,0,0,0,0],
   type: 'bar',
   }];
-  Plotly.react(bar, data2, {title: 'התפלגות אנרגיה', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  Plotly.react(bar, data2, {title: 'התפלגות אנרגיה', datarevision: t+v, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
 }
 
 calibrateSvg = function() {
@@ -995,19 +999,34 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   let data = [Ets, Extrs, EkCms, Eps, Eks, Efloors, Einters, EKints, Esps];
   Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
   const bar = document.getElementById("barRect");
+  const xs = ['כוללת', 'כבידה (גוף)', 'תנועה (גוף)', 'תנועה (חלקיקים)', 'אלסטית (חלקיקים)', 'פנימית'];
   let data2 = [{
-  x: [
-  'כוללת',
-  'כבידה (גוף)',
-  'תנועה (גוף)',
-  'תנועה (חלקיקים)',
-  'אלסטית (חלקיקים)',
-  'פנימית',
-  ],
-  y: [Et, Ep, EkCm, EKint, Esp, Einter],
+  x: xs,
+  y: [Ep, Ep, 0, 0, 0, 0],
   type: 'bar'
-  }];
-  Plotly.react(bar, data2, {title: 'אנרגיה כוללת', datarevision: t, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  },
+  {
+  x: xs,
+  y: [EkCm, 0, EkCm, 0, 0, 0],
+  type: 'bar'
+  },
+  {
+  x: xs,
+  y: [0, 0, 0, EKint, 0, EKint],
+  type: 'bar'
+  },
+  {
+  x: xs,
+  y: [0, 0, 0, 0, Esp, Esp],
+  type: 'bar'
+  },
+  {
+  x: xs,
+  y: [Einter, 0, 0, 0, 0, 0],
+  type: 'bar'
+  },
+  ];
+  Plotly.react(bar, data2, {title: 'אנרגיה כוללת', barmode: 'stack', showlegend: false, datarevision: t+v, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
 }
 
 function updateCircle(C, x, y) {
