@@ -106,7 +106,7 @@
 // <div class="input-group">
 // <button x-show="mode == 'view'" x-on:click="mode = 'edit'" title="Edit notebook" type="button" :class="button_class" >edit</button>
 // <button x-show="mode == 'edit'" x-on:click="mode = 'view'" title="View" type="button" :class="button_class" >visibility</button>
-//  <input type="text" id="label" value="חקר שימור ופיזור אנרגיה במערכות מרובות חלקיקים" title="Rename" size="45" style="direction: rtl">
+//  <input type="text" id="label" value="אנרגיה במערכת מרובת חלקיקים" title="Rename" size="45" style="direction: rtl">
 // <div class="form-check" x-show="mode == 'edit'">
 //  <input class="form-check-input" type="checkbox" value="" id="show_hidden_cells" x-model="show_hidden_cells">
 //  <label class="form-check-label" for="show_hidden_cells">
@@ -616,7 +616,7 @@ document.getElementById('label').onchange = function() {
   document.title = document.getElementById('label').value;
 }
 
-//+ fallingBodySim {"type": "html", "target": "fallingBodySim_output", "page": 1}
+//+ fallingBodySim {"type": "html", "target": "fallingBodySim_output", "page": 0, "hidden": true}
 // <div id="page_container" x-data="{plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined'}">
 //  <div class="row">
 //    <div class="col">
@@ -657,7 +657,7 @@ document.getElementById('label').onchange = function() {
 //    </div>
 //  </div>
 // </div>
-//+ page_1_intro {"type":"markdown","direction":"rtl", "page": 1, "target": "page_1_text"}
+//+ page_1_intro {"type":"markdown","direction":"rtl", "page": 1, "target": "page_1_text"} 
 //### הדינמיקה של גוף קשיח שנופל מגובה נתון לרצפה
 // * הפעילו את הסימולציה על ידי לחיצה על כפתור ההרצה הכחול <span :class="sim_button">play_circle</span> וצפו בתנועת הכדור הקופץ על הרצפה.
 // *  נסו לשער ולצייר:
@@ -786,8 +786,6 @@ drawBody();
 //+ rectSim {"type": "html", "target": "rectSim_output", "page": 2}
 // <div id="page_container" x-data="{plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined'}">
 //  <div class="row">
-//    <div class="col">
-//      <div class="container">
 //        <div class="row align-items-start">
 //          <div class="col">
 // <button onclick="{t=0; loop = false; setupRect(); calibrateSvg(); draw();}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
@@ -797,7 +795,6 @@ drawBody();
 //            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot == 'line' ? ' active' : '')" @click="plot = plot == 'line' ? '' : 'line'" style="font-size: 1.5em;">show_chart</a>
 //            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot == 'bar' ? ' active' : '')" @click="plot = plot == 'bar' ? '' : 'bar'" style="font-size: 1.5em;">bar_chart</a>
 //          </div>
-//          <div class="col">
 // <div class="col">
 // <span id="Nx_value"></span>
 // <label for="NxRange">חלקיקים לרוחב המלבן</label><br>
@@ -813,10 +810,11 @@ drawBody();
 // <span id="y0_rect_value"></span>
 // <label for="Y0" >גובה התחלתי</label><br>
 // <input oninput="{y0 = Number(this.value);  setupRect(); calibrateSvg(); draw();}" type="range" id="Y0" min="0" max="10" value="3">
-// </div>
 //          </div>
 //        </div>
-//      </div>
+//  </div>
+//  <div class="row">
+//    <div class="col">
 //      <svg width="500px" height="500px" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" id="rect_body" class="cartesian" style="border: 1px solid #ddd;">
 //        <defs>
 //          <pattern id="grid2" width="1" height="1" patternUnits="userSpaceOnUse">
@@ -835,12 +833,10 @@ drawBody();
 //      <div id="barRect" style="max-height: 550px;" x-show="plot == 'bar'">
 //      </div>
 //    </div>
-//    <div class="col" id="page_2_text">
-//    </div>
 //  </div>
 // </div>
 
-//+ intro{"type":"markdown","direction":"rtl", "page": 2, "target": "page_2_text"}
+//+ intro{"type":"markdown","direction":"rtl", "page": 2, "hidden": true}
 // ### השפעת המבנה הפנימי של הגוף הנופל על התנהגות המערכת
 // בסימולציה זו במקום גוף נקודתי קשיח, נדמה נפילת גוף מרובה חלקיקים. החלקיקים השונים מקושרים זה לזה בקשרים אלסטיים בעלי אורך מנוחה קבוע, אשר יכולים להימתח או להתכווץ, ומפעילים על החלקיקים השונים כוח בהתאמה למידת הכיווץ\מתיחה ביחס לאורך המנוחה שלהם.
 // 
@@ -882,15 +878,21 @@ setupRect = function() {
   i1=0
   ps=[]
   springs=[]
-  Eps = {x:[],y:[],type: 'scatter', name: 'פוטנציאלית',marker: {color: '#ff7f0e'}}
+  // Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)',marker: {color: '#ff7f0e'}}
+  Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)'}
   Eks = {x:[],y:[],type: 'scatter', name: 'קינטית חלקיקים', visible: 'legendonly'}
-  Esps = {x:[],y:[],type: 'scatter', name: 'אלסטית', visible: 'legendonly'}
-  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', visible: 'legendonly', marker: {color: '#d62728'}}
-  EkCms = {x:[],y:[],type: 'scatter', name: 'קינטית מרכז מסה'}
+  // Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', visible: 'legendonly'}
+  Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)'}
+  // Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', visible: 'legendonly', marker: {color: '#d62728'}}
+  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת'}
+  EkCms = {x:[],y:[],type: 'scatter', name: 'תנועה (גוף)'}
   Efloors = {x:[],y:[],type: 'scatter', name: 'אלסטית קרקע', visible: 'legendonly'}
-  Einters = {x:[],y:[],type: 'scatter', name: 'פנימית', visible: 'legendonly'}
-  EKints = {x:[],y:[],type: 'scatter', name: 'קינטית פנימית', visible: 'legendonly'}
-  Extrs = {x:[],y:[],type: 'scatter', name: 'מקרוסקופית', marker: {color: '#1f77b4'}}
+  // Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)', visible: 'legendonly'}
+  Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)'}
+  // EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', visible: 'legendonly'}
+  EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)'}
+  // Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)', marker: {color: '#1f77b4'}}
+  Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)'}
 
   for(let ly=0;ly<Ny;ly++){
   let p1={x:0,y:ly*L0,vx:0,vy:0,ax:0,ay:0}
@@ -919,21 +921,14 @@ setupRect = function() {
 
   Llim=y0+Nx*L0+Ny*L0+0.2
   const div = document.getElementById("plotRect");
-  let data = [Ets, Extrs, EkCms, Eps, Eks, Efloors, Einters, EKints, Esps];
-  Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  let data = [Ets, EkCms, Eps, Einters, EKints, Esps];
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
   Ep = ps.map(p=>m*g*p.y).reduce((a,b)=>a+b,0)-(Ny-1)*L0/2*m*g*Nx*Ny;
-  console.log(Ep)
   v+=1
   const bar = document.getElementById("barRect");
+  const xs = ['כוללת', 'כובד (גוף)', 'תנועה (גוף)', 'תנועה (חלקיקים)', 'אינטראקציה (חלקיקים)', 'פנימית (חלקיקים)'];
   let data2 = [{
-  x: [
-  'כוללת',
-  'כבידה (גוף)',
-  'תנועה (גוף)',
-  'תנועה (חלקיקים)',
-  'אלסטית (חלקיקים)',
-  'פנימית',
-  ],
+  x: xs,
   y: [Ep,Ep,0,0,0,0],
   type: 'bar',
   }];
@@ -984,6 +979,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   Eps.x.push(t);
   Eps.y.push(Ep);
   Esps.x.push(t);
+  Esps.y.push(Esp);
   Ets.x.push(t);
   Ets.y.push(Et);
   Efloors.x.push(t);
@@ -996,10 +992,11 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   Extrs.y.push(Eextr);
 
   const div = document.getElementById("plotRect");
-  let data = [Ets, Extrs, EkCms, Eps, Eks, Efloors, Einters, EKints, Esps];
-  Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  // let data = [Ets, Extrs, EkCms, Eps, Eks, Efloors, Einters, EKints, Esps];
+  let data = [Ets, EkCms, Eps, Einters, EKints, Esps];
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
   const bar = document.getElementById("barRect");
-  const xs = ['כוללת', 'כבידה (גוף)', 'תנועה (גוף)', 'תנועה (חלקיקים)', 'אלסטית (חלקיקים)', 'פנימית'];
+  const xs = ['כוללת', 'כובד (גוף)', 'תנועה (גוף)', 'תנועה (חלקיקים)', 'אינטראקציה (חלקיקים)', 'פנימית (חלקיקים)'];
   let data2 = [{
   x: xs,
   y: [Ep, Ep, 0, 0, 0, 0],
