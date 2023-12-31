@@ -313,6 +313,19 @@ function Line([x1,y1],[x2,y2],c) {
   return line;
 }
 
+function Arrow([x1,y1],[x2,y2],c) {
+  line = document.createElementNS("http://www.w3.org/2000/svg","line");
+  line.setAttribute("x1",x1);
+  line.setAttribute("y1",y1);
+  line.setAttribute("x2",x2);
+  line.setAttribute("y2",y2);
+  line.setAttribute("stroke",c);
+  line.setAttribute("stroke-width","0.01");
+  line.setAttribute("marker-end","url(#arrow)");
+  svg_output.appendChild(line);
+  return line;
+}
+
 function xlim(xmin,width) {
   ymin = svg_output.getAttribute("viewBox").split(" ")[1];
   height = svg_output.getAttribute("viewBox").split(" ")[3];
@@ -784,14 +797,15 @@ calibrateBodySvg();
 drawBody();
 }
 //+ springSim {"type": "html", "target": "springSim_output", "page": 1}
-// <div id="page_container" x-data="{plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined'}">
+// <div id="page_container" x-data="{show_force: false, plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined'}">
 //  <div class="row">
 //    <div class="row align-items-start">
 //      <div class="col">
-// <button onclick="{t=0; loop = false; setupSpring(); calibrateSpringSvg(); drawSpring();}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
+// <button onclick="{t=0; loop = false; setupSpring(); calibrateSpringSvg(); drawSpring(show_force);}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
 // <button onclick="loopSpring = true; delay_factor=1; startSpring();" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
 // <button onclick="loopSpring = false;" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
 // <button onclick="loopSpring = true; delay_factor=5; startSpring();" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
+//            <a href="#" role="button" title="הצג כוחות " :class="sim_button + (show_force ? ' active' : '')" @click="show_force = ! show_force; toggle_forces(show_force)" style="font-size: 1.5em;">compare_arrows</a>
 //            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot == 'line' ? ' active' : '')" @click="plot = plot == 'line' ? '' : 'line'" style="font-size: 1.5em;">show_chart</a>
 //            <a href="#" role="button" title="הצג התפלגות אנרגיה" :class="sim_button + (plot == 'bar' ? ' active' : '')" @click="plot = plot == 'bar' ? '' : 'bar'" style="font-size: 1.5em;">bar_chart</a>
 //      </div>
@@ -799,7 +813,7 @@ drawBody();
 //            <span> [מטר] </span>
 //            <span id="dx0_value"></span>
 //            <label for="DX0" >מרחק התחלתי</label><br>
-//            <input oninput="{setupSpring(Number(this.value)); calibrateSpringSvg(); drawSpring();}" type="range" id="DX0" min="0.5" max="1.9" step="0.1" value="0.7">
+//            <input oninput="{setupSpring(Number(this.value)); calibrateSpringSvg(); drawSpring(show_force);}" type="range" id="DX0" min="0.5" max="1.9" step="0.1" value="0.7">
 //      </div>
 //    </div>
 //  </div>
@@ -814,6 +828,11 @@ drawBody();
 //            <rect width="1" height="1" fill="url(#smallGrid)" />
 //            <path d="M 1 0 L 0 0 0 1" fill="none" stroke="#ccc" stroke-width="0.05"/>
 //          </pattern>
+//          <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5"
+//            markerWidth="6" markerHeight="6"
+//            orient="auto-start-reverse">
+//            <path d="M 0 0 L 10 5 L 0 10 z" />
+//          </marker>
 //        </defs>
 //        <rect x="-50%" y="-50%" width="100%" height="100%" fill="url(#springGrid)" />
 //        <g id="plot_spring_body">
@@ -843,6 +862,12 @@ let Esps,Eks,Ets,ps;
 let Llim;
 let Cs = [];
 loopSpring = false;
+
+toggle_forces = function(show) {
+  forces.forEach(function(f) {
+    f.setAttribute('visibility', show ? 'visible' : 'hidden');
+  });
+}
 
 setupSpring = function(input_dx0 = dx0) {
   if(input_dx0) dx0 = input_dx0;
@@ -890,13 +915,18 @@ calibrateSpringSvg = function() {
   svg_output = document.getElementById('plot_spring_body');
 }
 
-drawSpring = function() {
+drawSpring = function(show) {
   Cs=ps.map(p=>Circle(p.x,p.y,Cr/3, 'blue'));
+  forces = ps.map((p,i)=> Arrow([p.x,p.y],[p.x+p.ax*0.1,p.y+p.ay*0.1], 'black'));
+  toggle_forces(show);
 }
 
 function update_spring_svg() {
   Cs.map((C,i)=>{
   updateCircle(C,ps[i].x,ps[i].y);
+  })
+  forces.map((f,i)=>{
+  updateLine(f,ps[i].x,ps[i].y,ps[i].x+ps[i].ax*0.01,ps[i].y+ps[i].ay*0.1);
   })
 }
 
