@@ -801,7 +801,7 @@ drawBody();
 //  <div class="row">
 //    <div class="row align-items-start">
 //      <div class="col">
-// <button onclick="{t=0; loop = false; setupSpring(); calibrateSpringSvg(); drawSpring(show_force);}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
+// <button @click="t=0; loopSpring = false; setupSpring(); calibrateSpringSvg(); drawSpring(show_force);" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
 // <button onclick="loopSpring = true; delay_factor=1; startSpring();" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
 // <button onclick="loopSpring = false;" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
 // <button onclick="loopSpring = true; delay_factor=5; startSpring();" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
