@@ -1303,14 +1303,14 @@ drawRect();
 }
 
 //+ thermalSim {"type": "html", "target": "thermalSim_output", "page": 3}
-// <div id="page_container" x-data="{plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined'}">
+// <div id="page_container" x-data="{plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined', Ny1_ui: 6, Ny2_ui: 6}">
 //  <div class="row">
 //        <div class="row align-items-start">
 //          <div class="col">
 // <button onclick="{t=0; loop = false; setupRects(); calibrateRectsSvg(); drawRects();}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
-// <button onclick="{loop = true; delay_factor=1; start();}" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
+// <button onclick="{loop = true; delay_factor=1; startRects();}" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
 // <button onclick="{loop = false;}" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
-// <button onclick="{loop = true; delay_factor=5; start();}" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
+// <button onclick="{loop = true; delay_factor=5; startRects();}" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
 //            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot == 'line' ? ' active' : '')" @click="plot = plot == 'line' ? '' : 'line'" style="font-size: 1.5em;">show_chart</a>
 //            <a href="#" role="button" title="הצג התפלגות אנרגיה" :class="sim_button + (plot == 'bar' ? ' active' : '')" @click="plot = plot == 'bar' ? '' : 'bar'" style="font-size: 1.5em;">bar_chart</a>
 //          </div>
@@ -1319,41 +1319,41 @@ drawRect();
 // <div class="col">
 //  <span id="Nx1_value"></span>
 //  <label for="Nx1Range">חלקיקים לרוחב המלבן</label><br>
-//  <input oninput="{Nx1 = this.value; setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Nx1Range" min="1" max="10" value="7" >
+//  <input oninput="{Nx1 = Number(this.value); setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Nx1Range" min="1" max="10" value="7" >
 // </div>
 // <div class="col">
 //  <span id="Ny1_value"></span>
 //  <label for="Ny1Range" >חלקיקים לגובה המלבן</label><br>
-//  <input oninput="{Ny1 = this.value;  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Ny1Range" min="1" max="10" value="6">
+//  <input oninput="{Ny1 = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Ny1Range" min="2" max="10" value="6" x-model="Ny1_ui">
 // </div>
 // <div class="col">
 //  <span id="E01_value"></span>
 //  <label for="E01Range" >אנרגיית התחלה</label><br>
-//  <input oninput="{E01 = this.value;  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="E01Range" min="0" max="10" value="1">
+//  <input oninput="{E01 = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="E01Range" min="0" max="10" value="1">
 // </div>
 // </div>
 // </div>
 // <div class="col">
 //  <span id="couplers_value"></span>
 //  <label for="couplers" >מס' צימודים</label><br>
-//  <input oninput="{couplers = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="couplers" min="0" max="10" value="2">
+//  <input oninput="{couplers = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="couplers" min="0" :max="Math.min(Number(Ny1_ui),Number(Ny2_ui))-1" value="2">
 // </div>
 // <div class="col">
 //        <div class="row align-items-start">
 // <div class="col">
 //  <span id="Nx2_value"></span>
 //  <label for="Nx2Range">חלקיקים לרוחב המלבן</label><br>
-//  <input oninput="{Nx2 = this.value; setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Nx2Range" min="1" max="10" value="7" >
+//  <input oninput="{Nx2 = Number(this.value); setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Nx2Range" min="1" max="10" value="7" >
 // </div>
 // <div class="col">
 //  <span id="Ny2_value"></span>
 //  <label for="Ny2Range" >חלקיקים לגובה המלבן</label><br>
-//  <input oninput="{Ny2 = this.value;  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Ny2Range" min="1" max="10" value="6">
+//  <input oninput="{Ny2 = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Ny2Range" min="2" max="10" value="6" x-model="Ny2_ui">
 // </div>
 // <div class="col">
 //  <span id="E02_value"></span>
 //  <label for="E02Range" >אנרגיית התחלה</label><br>
-//  <input oninput="{E02 = this.value;  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="E02Range" min="0" max="10" value="0">
+//  <input oninput="{E02 = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="E02Range" min="0" max="10" value="0">
 // </div>
 // </div>
 // </div>
@@ -1411,7 +1411,23 @@ createRectangle = function(X0,Y0,Nx,Ny,Ek0,label,ps,springs) {
   const V0 = Math.sqrt(2*Ek0/m);
   for (let ly = 0; ly < Ny; ly++) {
     for (let lx = 0; lx < Nx; lx++) {
+      let theta = Math.random()*2*Math.PI;
       ps.push({x: X0 + lx*L0, y: Y0 + ly*L0, vx: V0*Math.cos(theta), vy: V0*Math.sin(theta), m: m, fixed: false, label: label});
+    }
+  }
+  for (let ly = 0; ly < Ny; ly++) {
+    for (let lx = 0; lx < Nx; lx++) {
+      let i1 = pStart + ly*Nx + lx;
+      if (lx < Nx - 1) {
+        springs.push({i1: i1, i2: i1 + 1, L: L0});
+      }
+      if (ly < Ny - 1) {
+        springs.push({i1: i1, i2: i1 + Nx, L: L0});
+      }
+      if (lx < Nx - 1 && ly < Ny - 1) {
+        springs.push({i1: i1, i2: i1 + Nx + 1, L: Math.sqrt(2)*L0});
+        springs.push({i1: i1 + 1, i2: i1 + Nx, L: Math.sqrt(2)*L0});
+      }
     }
   }
 }
@@ -1436,39 +1452,24 @@ setupRects = function() {
   Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)'}
   EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)'}
   Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)'}
-
-  for(let ly=0;ly<Ny;ly++){
-  let p1={x:0,y:ly*L0,vx:0,vy:0,ax:0,ay:0}
-  if(ly>0){
-   springs.push({i1:i1,i2:(ly-1)*Nx,L:L0})
+  Llim=(Nx1+Nx2+2)*L0
+  createRectangle(-Llim/2+L0,0,Nx1,Ny1,E01,'1',ps,springs)
+  ps[0].fixed = true;
+  createRectangle(-Llim/2+L0*(Nx1+1),0,Nx2,Ny2,E02,'2',ps,springs)
+  ps[Nx1*Ny1+Nx2-1].fixed = true;
+  couplers = Math.min(couplers, Math.min(Ny1,Ny2)-1);
+  const rows = Math.min(Ny1,Ny2)-1;
+  for (let i = 0; i < couplers; i++) {
+    row = Math.floor(i*rows/couplers)+1;
+    springs.push({i1: (row+1)*Nx1 - 1, i2: Nx1*Ny1+ row*Nx2, L: L0});
   }
-  ps.push(p1);
-  for(let lx=1;lx<Nx;lx++){
-   let p2={x:lx*L0,y:ly*L0,vx:0,vy:0,ax:0,ay:0}
-   let i2=i1+1;
-   springs.push({i1:i1,i2:i2,L:L0})
-   
-   if(ly>0){
-     springs.push({i1:i1,i2:(ly-1)*Nx+lx,L:Math.sqrt(2)*L0})
-     springs.push({i1:i2,i2:(ly-1)*Nx+lx-1,L:Math.sqrt(2)*L0})
-     springs.push({i1:i2,i2:(ly-1)*Nx+lx,L:L0})
-   }
-   p1=p2 
-   ps.push(p1)
-   i1=i2
-  }
-  i1+=1}
 
-  ps.map(p=>p.y+=y0)
-  ps.map(p=>p.x+=-L0*Nx/2)
-
-  Llim=y0+Nx*L0+Ny*L0+0.2
-  const div = document.getElementById("plotRect");
+  const div = document.getElementById("plotRects");
   let data = [Ets, EkCms, Eps, Einters, EKints, Esps];
   Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
   Ep = ps.map(p=>m*g*p.y).reduce((a,b)=>a+b,0)-(Ny-1)*L0/2*m*g*Nx*Ny;
   v+=1
-  const bar = document.getElementById("barRect");
+  const bar = document.getElementById("barRects");
   const xs = ['כוללת', 'כובד (גוף)', 'תנועה (גוף)', 'תנועה (חלקיקים)', 'אינטראקציה (חלקיקים)', 'פנימית (חלקיקים)'];
   let data2 = [{
   x: xs,
@@ -1479,11 +1480,11 @@ setupRects = function() {
 }
 
 calibrateRectsSvg = function() {
-  svg_output = document.getElementById('rect_body');
+  svg_output = document.getElementById('rects_body');
   xlim(-Llim/2,Llim)
   ylim(-Llim*0.01,Llim)
-  svg_output.getElementById('plot_body').innerHTML = '';
-  svg_output = document.getElementById('plot_body');
+  svg_output.getElementById('plot_rects').innerHTML = '';
+  svg_output = document.getElementById('plot_rects');
 }
 
 drawRects = function() {
@@ -1499,7 +1500,7 @@ function update_rects_svg() {
     updateLine(Ls[i], ps[s.i1].x , ps[s.i1].y, ps[s.i2].x , ps[s.i2].y )
   })
   Cs.map((C,i)=>{
-  updateCircle(C,ps[i].x,ps[i].y);
+    updateCircle(C,ps[i].x,ps[i].y);
   })
 }
 
@@ -1570,8 +1571,8 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
 
 function step() {
   ps.map(p=>{
-   p.x+=p.vx*dt; p.y+=p.vy*dt;
-   p.ay=-g+(p.y<0)*(-kfloor/m*p.y); p.ax=0
+   p.x+= p.fixed? 0: p.vx*dt; p.y+=p.fixed? 0: p.vy*dt;
+   p.ay=(p.y<0)*(-kfloor/m*p.y); p.ax=0
   })
 
   springs.map((s,i)=>{
@@ -1606,7 +1607,7 @@ const loopstep = async () => {
   }
 }
 
-const start = function () {
+startRects = function () {
   setTimeout(loopstep, 1);
 }
 
