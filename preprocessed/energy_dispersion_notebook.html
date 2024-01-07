@@ -1379,7 +1379,6 @@ drawRect();
 //        <rect x="-50%" y="0%" width="100%" height="100%" fill="url(#grid3)" />
 //        <g id="plot_rects">
 //        </g>
-//        <rect x="-50%" y="-1%" width="100%" height="1%" fill="black" />
 //      </svg>
 //    </div>
 //    <div class="col" style="max-height: 500px;">
@@ -1414,6 +1413,7 @@ let v=0;
 let g=0;
 let Cs = [];
 let Ls = [];
+let boundries = {left: -1, right: 1, top: 1, bottom: -1};
 
 createRectangle = function(X0,Y0,Nx,Ny,Ek0,label,ps,springs) {
   let i1=0
@@ -1463,10 +1463,14 @@ setupRects = function() {
   Ets = {x:[],y:[],type: 'scatter', name: 'כוללת'}
 
   Llim=(Math.max(Nx1+Nx2,Ny1,Ny2)+2)*L0
+  boundries.left = -Llim/2+L0;
+  boundries.right = boundries.left + L0*(Nx1+Nx2-1);
+  boundries.top = (Math.max(Ny1,Ny2)-1)*L0;
+  boundries.bottom = 0;
   createRectangle(-Llim/2+L0,0,Nx1,Ny1,E01,'1',ps,springs)
-  ps[0].fixed = true;
+  // ps[0].fixed = true;
   createRectangle(-Llim/2+L0*(Nx1+1),0,Nx2,Ny2,E02,'2',ps,springs)
-  ps[Nx1*Ny1+Nx2-1].fixed = true;
+  // ps[Nx1*Ny1+Nx2-1].fixed = true;
   couplers = Math.min(couplers, Math.min(Ny1,Ny2)-1);
   const rows = Math.min(Ny1,Ny2)-1;
   for (let i = 0; i < couplers; i++) {
@@ -1505,6 +1509,7 @@ calibrateRectsSvg = function() {
   ylim(-Llim*0.01,Llim)
   svg_output.getElementById('plot_rects').innerHTML = '';
   svg_output = document.getElementById('plot_rects');
+  Rect(boundries.left,boundries.bottom,boundries.right-boundries.left,boundries.top-boundries.bottom,'0.05');
 }
 
 drawRects = function() {
@@ -1580,7 +1585,8 @@ function updateEs() {
 function step() {
   ps.map(p=>{
    p.x+= p.fixed? 0: p.vx*dt; p.y+=p.fixed? 0: p.vy*dt;
-   p.ay=(p.y<0)*(-kfloor/m*p.y); p.ax=0
+   p.ay=(p.y<boundries.bottom)*(kfloor/m*(boundries.bottom-p.y))+(p.y>boundries.top)*(kfloor/m*(boundries.top-p.y));
+   p.ax=(p.x<boundries.left)*(kfloor/m*(boundries.left-p.x))+(p.x>boundries.right)*(kfloor/m*(boundries.right-p.x));
   })
 
   springs.map((s,i)=>{
