@@ -1104,6 +1104,7 @@ let delay_factor = 1;
 let v=0;
 let Cs = [];
 let Ls = [];
+let Esps,Eks,Ets,Eps;
 
 setupRect = function() {
   document.getElementById('Nx_value').innerHTML = Nx;
@@ -1115,16 +1116,16 @@ setupRect = function() {
   // Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)',marker: {color: '#ff7f0e'}}
   Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)'}
   Eks = {x:[],y:[],type: 'scatter', name: 'קינטית חלקיקים', visible: 'legendonly'}
-  // Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', visible: 'legendonly'}
-  Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)'}
+  Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', visible: 'legendonly'}
+  // Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)'}
   // Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', visible: 'legendonly', marker: {color: '#d62728'}}
   Ets = {x:[],y:[],type: 'scatter', name: 'כוללת'}
   EkCms = {x:[],y:[],type: 'scatter', name: 'תנועה (גוף)'}
   Efloors = {x:[],y:[],type: 'scatter', name: 'אלסטית קרקע', visible: 'legendonly'}
   // Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)', visible: 'legendonly'}
   Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)'}
-  // EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', visible: 'legendonly'}
-  EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)'}
+  EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', visible: 'legendonly'}
+  // EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)'}
   // Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)', marker: {color: '#1f77b4'}}
   Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)'}
 
@@ -1592,7 +1593,7 @@ function step() {
   p1.ay+=ay; p2.ay+=-ay;
   })
 
-  ps.map(p=>{p.vx+=p.ax*dt; p.vy+=p.ay*dt});
+  ps.map(p=>{p.vx+=p.fixed? 0: p.ax*dt; p.vy+=p.fixed? 0: p.ay*dt});
 }
 
 const delay = ms => new Promise(res => setTimeout(res, ms));
