@@ -819,7 +819,8 @@ drawBody();
 //    </div>
 //  </div>
 //  <div class="row">
-//    <div class="col-4">
+//    <div class="col-4" style="text-align: center;">
+//      <span>תצוגת אינטאקציה בין שני גופים</span><br>
 //      <svg width="500px" height="500px" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" id="spring_svg" class="cartesian" style="border: 1px solid #ddd;">
 //        <defs>
 //          <pattern id="smallGrid" width="0.01" height="0.01" patternUnits="userSpaceOnUse">
@@ -840,7 +841,8 @@ drawBody();
 //        </g>
 //      </svg>
 //    </div>
-//    <div class="col" style="max-height: 500px;">
+//    <div class="col" style="max-height: 520px;">
+//      <br>
 //      <div id="plotSpring" style="max-height: 500px;" x-show="plot == 'line'">
 //      </div>
 //      <div id="barSpring" style="max-height: 500px;" x-show="plot == 'bar'">
@@ -850,6 +852,17 @@ drawBody();
 // </div>
 //+ springSimulation {"type": "javascriptCell", "page": 1}
 function springSimulation(){function print(string) {getBlockTarget('springSimulation').innerHTML += string + '<br>';}
+colors = {
+'p1': '#332288',
+'p2': '#117733',
+'p3': '#44AA99',
+'p4': '#88CCEE',
+'p5': '#DDCC77',
+'p6': '#CC6677',
+'p7': '#AA4499',
+'p8': '#882255',
+}
+
 let dx0=0.07;
 let t=0;
 let Cr = 0.01;
@@ -877,9 +890,9 @@ toggle_connection = function(show) {
 setupSpring = function(input_dx0 = dx0) {
   if(input_dx0) dx0 = input_dx0;
   document.getElementById('dx0_value').innerHTML = Math.round(dx0*100);
-  Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)'}
-  Eks = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)'}
-  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת'}
+  Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', marker: {color: colors.p3}};
+  Eks = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', marker: {color: colors.p2}};
+  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', marker: {color: colors.p1}};
   t=0;
   v+=1;
   loopSpring = false;
@@ -904,12 +917,14 @@ setupSpring = function(input_dx0 = dx0) {
   let data2 = [{
   x: xs,
   y: [Esp, 0, Esp],
-  type: 'bar'
+  type: 'bar',
+  marker: Esps.marker,
   },
   {
   x: xs,
   y: [Ek, Ek, 0],
-  type: 'bar'
+  type: 'bar',
+  marker: Eks.marker,
   },
   ];
   Plotly.react(bar, data2, {title: 'מופעי האנרגיה', barmode: 'stack', showlegend: false, datarevision: t+v, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0, 0.5*k*((l0-0.2)**2)]}});
@@ -966,12 +981,14 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   let data2 = [{
   x: xs,
   y: [Esp, 0, Esp],
-  type: 'bar'
+  type: 'bar',
+  marker: Esps.marker,
   },
   {
   x: xs,
   y: [Ek, Ek, 0],
-  type: 'bar'
+  type: 'bar',
+  marker: Eks.marker,
   },
   ];
   Plotly.react(bar, data2, {title: 'מופעי האנרגיה', barmode: 'stack', showlegend: false, datarevision: t+v, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0, 0.5*k*((l0-0.2)**2)]}});
@@ -1122,20 +1139,14 @@ setupRect = function() {
   i1=0
   ps=[]
   springs=[]
-  // Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)',marker: {color: '#ff7f0e'}}
-  Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)'}
+  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', marker: {color: colors['p1']}};
+  EKints = {raw_y: [], x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', marker: {color: colors['p2']}};
+  Esps = {raw_y: [],x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', marker: {color: colors['p3']}};
+  EkCms = {x:[],y:[],type: 'scatter', name: 'תנועה (גוף)', marker: {color: colors['p4']}};
+  Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)', marker: {color: colors['p5']}};
+  Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)', marker: {color: colors['p6']}};
   Eks = {x:[],y:[],type: 'scatter', name: 'קינטית חלקיקים', visible: 'legendonly'}
-  // Esps = {raw_y: [],x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', visible: 'legendonly'}
-  Esps = {raw_y: [],x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)'}
-  // Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', visible: 'legendonly', marker: {color: '#d62728'}}
-  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת'}
-  EkCms = {x:[],y:[],type: 'scatter', name: 'תנועה (גוף)'}
   Efloors = {x:[],y:[],type: 'scatter', name: 'אלסטית קרקע', visible: 'legendonly'}
-  // Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)', visible: 'legendonly'}
-  Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)'}
-  // EKints = {raw_y: [], x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', visible: 'legendonly'}
-  EKints = {raw_y: [], x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)'}
-  // Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)', marker: {color: '#1f77b4'}}
   Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)'}
 
   for(let ly=0;ly<Ny;ly++){
@@ -1174,6 +1185,7 @@ setupRect = function() {
   let data2 = [{
   x: xs,
   y: [Ep,Ep,0,0,0,0],
+  marker: Eps.marker,
   text: [xs[0], xs[1], '', '', '', ''],
   textposition: 'outside',
   type: 'bar',
@@ -1248,6 +1260,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   let data2 = [{
   x: xs,
   y: [Ep, Ep, 0, 0, 0, 0],
+  marker: Eps.marker,
   text: ['', xs[1], '', '', '', ''],
   textposition: 'outside',
   type: 'bar'
@@ -1255,6 +1268,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   {
   x: xs,
   y: [EkCm, 0, EkCm, 0, 0, 0],
+  marker: EkCms.marker,
   text: ['', '', xs[2], '', '', ''],
   textposition: 'outside',
   type: 'bar'
@@ -1265,7 +1279,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   text: ['', '', '', xs[3], '', ''],
   textposition: 'outside',
   type: 'bar',
-  marker: {pattern: {shape: '\\', width: 0.5, fillmode: 'overlay'}, color: '#9467bd'},
+  marker: {pattern: {shape: '\\', width: 0.5, fillmode: 'overlay'}, color: Einters.marker.color},
   },
   {
   x: xs,
@@ -1273,7 +1287,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   text: ['', '', '', '', xs[4], xs[5]],
   textposition: 'outside',
   type: 'bar',
-  marker: {pattern: {shape: '/', width: 0.5, fillmode: 'overlay'}, color: '#9467bd'},
+  marker: {pattern: {shape: '/', width: 0.5, fillmode: 'overlay'}, color: Einters.marker.color},
   },
   {
   x: xs,
@@ -1281,7 +1295,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   text: [xs[0],'', '', '', '', ''],
   textposition: 'outside',
   type: 'bar',
-  marker: {pattern: {shape: 'x', width: 0.5, fillmode: 'overlay'}, color: '#9467bd'},
+  marker: {pattern: {shape: 'x', width: 0.5, fillmode: 'overlay'}, color: Einters.marker.color},
   },
   ];
   Plotly.react(bar, data2, {title: 'מופעי האנרגיה', barmode: 'stack', showlegend: false, datarevision: t+v, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
@@ -1479,13 +1493,14 @@ setupRects = function() {
   i1=0
   ps=[]
   springs=[]
-  Eks1 = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים) א', visible: 'legendonly'}
-  Esps1 = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים) א'}
-  Eints1 = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים) א'}
-  Eks2 = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים) ב'}
-  Esps2 = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים) ב'}
-  Eints2 = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים) ב'}
-  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת'}
+  Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', marker: {color: colors['p1']}};
+  Eks1 = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים) א', marker: {color: colors['p2']}};
+  Esps1 = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים) א', marker: {color: colors['p3']}};
+  Eints1 = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים) א', marker: {color: colors['p6']}};
+  Eks2 = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים) ב', marker: {color: colors['p4']}};
+  Esps2 = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים) ב', marker: {color: colors['p5']}};
+  Eints2 = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים) ב', marker: {color: colors['p7']}};
+  Ecoups = {x:[],y:[],type: 'scatter', name: 'קישור', marker: {color: colors['p8']}};
 
   Llim=(Math.max(Nx1+Nx2,Ny1,Ny2)+2)*L0
   boundries.left = -Llim/2+L0;
@@ -1493,9 +1508,9 @@ setupRects = function() {
   boundries.top = (Math.max(Ny1,Ny2)-1)*L0;
   boundries.bottom = 0;
   createRectangle(-Llim/2+L0,0,Nx1,Ny1,E01,'1',ps,springs)
-  // ps[0].fixed = true;
+  ps[0].fixed = true;
   createRectangle(-Llim/2+L0*(Nx1+1),0,Nx2,Ny2,E02,'2',ps,springs)
-  // ps[Nx1*Ny1+Nx2-1].fixed = true;
+  ps[Nx1*Ny1+Nx2-1].fixed = true;
   couplers = Math.min(couplers, Math.min(Ny1,Ny2)-1);
   const rows = Math.min(Ny1,Ny2)-1;
   for (let i = 0; i < couplers; i++) {
@@ -1504,7 +1519,7 @@ setupRects = function() {
   }
 
   const div = document.getElementById("plotRects");
-  let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2];
+  let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2, Ecoups];
   Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
   v+=1
   let Ek1 = E01*Nx1*Ny1;
@@ -1512,17 +1527,19 @@ setupRects = function() {
   let Eint1 = Ek1;
   let Eint2 = Ek2;
   const bar = document.getElementById("barRects");
-  const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name];
+  const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name];
   let data2 = [
   {
   x: xs,
-  y: [Eint1,Ek1,0,Ek1,0,0,0],
+  y: [Eint1,Ek1,0,Ek1,0,0,0,0],
   type: 'bar',
+  marker: Eks1.marker,
   },
  {
   x: xs,
-  y: [Eint2,0,0,0,Ek2,0,Ek2],
+  y: [Eint2,0,0,0,Ek2,0,Ek2,0],
   type: 'bar',
+  marker: Eks2.marker,
   },
   ];
   Plotly.react(bar, data2, {title: 'מופעי האנרגיה', barmode: 'stack', showlegend: false, datarevision: t+v, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]',range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
@@ -1561,10 +1578,11 @@ function updateEs() {
   Esps = springs.map(s=>({l1: ps[s.i1].label, l2: ps[s.i2].label, E: 0.5*k*((s.L-Math.sqrt((ps_u[s.i1].x-ps_u[s.i2].x)**2+(ps_u[s.i1].y-ps_u[s.i2].y)**2))**2)}));
   Esp1 = Esps.filter(s=>s.l1=='1' && s.l2=='1').map(s=>s.E).reduce((a,b)=>a+b,0);
   Esp2 = Esps.filter(s=>s.l1=='2' && s.l2=='2').map(s=>s.E).reduce((a,b)=>a+b,0);
+  Ecoup = Esps.filter(s=>s.l1=='1' && s.l2=='2').map(s=>s.E).reduce((a,b)=>a+b,0);
   Eint1 = Ek1 + Esp1;
   Eint2 = Ek2 + Esp2;
   Ets.x.push(t);
-  Ets.y.push(Eint1+Eint2);
+  Ets.y.push(Eint1+Eint2+Ecoup);
   Eks1.x.push(t);
   Eks1.y.push(Ek1);
   Eks2.x.push(t);
@@ -1577,31 +1595,43 @@ function updateEs() {
   Eints1.y.push(Eint1);
   Eints2.x.push(t);
   Eints2.y.push(Eint2);
+  Ecoups.x.push(t);
+  Ecoups.y.push(Ecoup);
 
   const div = document.getElementById("plotRects");
   let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2];
   Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
   const bar = document.getElementById("barRects");
-  const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name];
+  const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name];
   let data2 = [{
   x: xs,
-  y: [Eint1, Ek1, 0, Ek1, 0, 0, 0],
-  type: 'bar'
+  y: [Ek1, Ek1, 0, Ek1, 0, 0, 0, 0],
+  type: 'bar',
+  marker: Eks1.marker,
   },
   {
   x: xs,
-  y: [Eint2, 0, 0, 0, Ek2, 0, Ek2],
-  type: 'bar'
+  y: [Esp1, 0, Esp1, Esp1, 0, 0, 0, 0],
+  type: 'bar',
+  marker: Esps1.marker,
   },
   {
   x: xs,
-  y: [0, 0, Esp1, Esp1, 0, 0, 0],
-  type: 'bar'
+  y: [Ek2, 0, 0, 0, Ek2, 0, Ek2, 0],
+  type: 'bar',
+  marker: Eks2.marker,
   },
   {
   x: xs,
-  y: [0, 0, 0, 0, 0, Esp2, Esp2],
-  type: 'bar'
+  y: [Esp2, 0, 0, 0, 0, Esp2, Esp2, 0],
+  type: 'bar',
+  marker: Esps2.marker,
+  },
+  {
+  x: xs,
+  y: [Ecoup, 0, 0, 0, 0, 0, 0, Ecoup],
+  type: 'bar',
+  marker: Ecoups.marker,
   },
   ];
   Plotly.react(bar, data2, {title: 'מופעי האנרגיה', barmode: 'stack', showlegend: false, datarevision: t+v, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]',range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
