@@ -797,7 +797,7 @@ calibrateBodySvg();
 drawBody();
 }
 //+ springSim {"type": "html", "target": "springSim_output", "page": 1}
-// <div id="page_container" x-data="{show_force: false, plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined'}">
+// <div id="page_container" x-data="{show_force: false, show_connection: false, plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined'}">
 //  <div class="row">
 //    <div class="row align-items-start">
 //      <div class="col">
@@ -805,6 +805,7 @@ drawBody();
 // <button onclick="loopSpring = true; delay_factor=1; startSpring();" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
 // <button onclick="loopSpring = false;" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
 // <button onclick="loopSpring = true; delay_factor=5; startSpring();" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
+//            <a href="#" role="button" title="הצג חיבור " :class="sim_button + (show_connection ? ' active' : '')" @click="show_connection = ! show_connection; toggle_connection(show_connection)" style="font-size: 1.5em;">line_start</a>
 //            <a href="#" role="button" title="הצג כוחות " :class="sim_button + (show_force ? ' active' : '')" @click="show_force = ! show_force; toggle_forces(show_force)" style="font-size: 1.5em;">compare_arrows</a>
 //            <a href="#" role="button" title="הצג התפלגות אנרגיה" :class="sim_button + (plot == 'bar' ? ' active' : '')" @click="plot = plot == 'bar' ? '' : 'bar'" style="font-size: 1.5em;">bar_chart</a>
 //            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot == 'line' ? ' active' : '')" @click="plot = plot == 'line' ? '' : 'line'" style="font-size: 1.5em;">show_chart</a>
@@ -813,7 +814,7 @@ drawBody();
 //            <span> [סנטימטר] </span>
 //            <span id="dx0_value"></span>
 //            <label for="DX0" >מרחק התחלתי</label><br>
-//            <input @input="$el.value = Math.min($el.max,Math.max($el.value,$el.min));setupSpring(Number($el.value*0.01)); calibrateSpringSvg(); drawSpring(show_force);" type="number" id="DX0" min="5" max="19" step="1" value="7">
+//            <input @input="$el.value = Math.min($el.max,Math.max($el.value,$el.min));setupSpring(Number($el.value*0.01)); calibrateSpringSvg(); drawSpring(show_connection, show_force);" type="number" id="DX0" min="5" max="19" step="1" value="7">
 //      </div>
 //    </div>
 //  </div>
@@ -869,6 +870,10 @@ toggle_forces = function(show) {
   });
 }
 
+toggle_connection = function(show) {
+    springLine.setAttribute('visibility', show ? 'visible' : 'hidden');
+}
+
 setupSpring = function(input_dx0 = dx0) {
   if(input_dx0) dx0 = input_dx0;
   document.getElementById('dx0_value').innerHTML = Math.round(dx0*100);
@@ -918,11 +923,12 @@ calibrateSpringSvg = function() {
   svg_output = document.getElementById('plot_spring_body');
 }
 
-drawSpring = function(show) {
+drawSpring = function(show_connection, show_force) {
   Cs=ps.map(p=>Circle(p.x,p.y,Cr/3, 'blue'));
   springLine=Line([ps[0].x,ps[0].y],[ps[1].x,ps[1].y],'red',"0.001")
   forces = ps.map((p,i)=> Arrow([p.x,p.y],[p.x+p.ax*0.005,p.y+p.ay*0.005], 'black', "0.001"));
-  toggle_forces(show);
+  toggle_forces(show_force);
+  toggle_connection(show_connection);
 }
 
 function update_spring_svg() {
@@ -1046,7 +1052,8 @@ drawSpring();
 //        </div>
 //  </div>
 //  <div class="row">
-//    <div class="col-4">
+//    <div class="col-4" style="text-align: center;">
+//      <span>תצוגת גוף נופל</span><br>
 //      <svg width="500px" height="500px" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" id="rect_body" class="cartesian" style="border: 1px solid #ddd;">
 //        <defs>
 //          <pattern id="grid2" width="1" height="1" patternUnits="userSpaceOnUse">
@@ -1059,7 +1066,8 @@ drawSpring();
 //        <rect x="-50%" y="-1%" width="100%" height="1%" fill="black" />
 //      </svg>
 //    </div>
-//    <div class="col" style="max-height: 500px;">
+//    <div class="col" style="max-height: 520px;">
+//      <br>
 //      <div id="plotRect" style="max-height: 500px;" x-show="plot == 'line'">
 //      </div>
 //      <div id="barRect" style="max-height: 500px;" x-show="plot == 'bar'">
@@ -1104,7 +1112,8 @@ let delay_factor = 1;
 let v=0;
 let Cs = [];
 let Ls = [];
-let Esps,Eks,Ets,Eps;
+let Esps,Eks,Ets,Eps, EKints ;
+let window = 10;
 
 setupRect = function() {
   document.getElementById('Nx_value').innerHTML = Nx;
@@ -1116,16 +1125,16 @@ setupRect = function() {
   // Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)',marker: {color: '#ff7f0e'}}
   Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)'}
   Eks = {x:[],y:[],type: 'scatter', name: 'קינטית חלקיקים', visible: 'legendonly'}
-  Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', visible: 'legendonly'}
-  // Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)'}
+  // Esps = {raw_y: [],x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', visible: 'legendonly'}
+  Esps = {raw_y: [],x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)'}
   // Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', visible: 'legendonly', marker: {color: '#d62728'}}
   Ets = {x:[],y:[],type: 'scatter', name: 'כוללת'}
   EkCms = {x:[],y:[],type: 'scatter', name: 'תנועה (גוף)'}
   Efloors = {x:[],y:[],type: 'scatter', name: 'אלסטית קרקע', visible: 'legendonly'}
   // Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)', visible: 'legendonly'}
   Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)'}
-  EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', visible: 'legendonly'}
-  // EKints = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)'}
+  // EKints = {raw_y: [], x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', visible: 'legendonly'}
+  EKints = {raw_y: [], x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)'}
   // Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)', marker: {color: '#1f77b4'}}
   Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)'}
 
@@ -1165,6 +1174,8 @@ setupRect = function() {
   let data2 = [{
   x: xs,
   y: [Ep,Ep,0,0,0,0],
+  text: [xs[0], xs[1], '', '', '', ''],
+  textposition: 'outside',
   type: 'bar',
   }];
   Plotly.react(bar, data2, {title: 'מופעי האנרגיה', datarevision: t+v, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
@@ -1214,7 +1225,8 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   Eps.x.push(t);
   Eps.y.push(Ep);
   Esps.x.push(t);
-  Esps.y.push(Esp);
+  Esps.raw_y.push(Esp);
+  Esps.y.push(Esps.raw_y.slice(-window).reduce((a,b)=>a+b,0)/window);
   Ets.x.push(t);
   Ets.y.push(Et);
   Efloors.x.push(t);
@@ -1222,7 +1234,8 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   Einters.x.push(t);
   Einters.y.push(Einter);
   EKints.x.push(t);
-  EKints.y.push(EKint);
+  EKints.raw_y.push(EKint);
+  EKints.y.push(EKints.raw_y.slice(-window).reduce((a,b)=>a+b,0)/window);
   Extrs.x.push(t);
   Extrs.y.push(Eextr);
 
@@ -1235,28 +1248,38 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   let data2 = [{
   x: xs,
   y: [Ep, Ep, 0, 0, 0, 0],
+  text: ['', xs[1], '', '', '', ''],
+  textposition: 'outside',
   type: 'bar'
   },
   {
   x: xs,
   y: [EkCm, 0, EkCm, 0, 0, 0],
+  text: ['', '', xs[2], '', '', ''],
+  textposition: 'outside',
   type: 'bar'
   },
   {
   x: xs,
   y: [0, 0, 0, EKint, 0, EKint],
+  text: ['', '', '', xs[3], '', ''],
+  textposition: 'outside',
   type: 'bar',
   marker: {pattern: {shape: '\\', width: 0.5, fillmode: 'overlay'}, color: '#9467bd'},
   },
   {
   x: xs,
   y: [0, 0, 0, 0, Esp, Esp],
+  text: ['', '', '', '', xs[4], xs[5]],
+  textposition: 'outside',
   type: 'bar',
   marker: {pattern: {shape: '/', width: 0.5, fillmode: 'overlay'}, color: '#9467bd'},
   },
   {
   x: xs,
   y: [Einter, 0, 0, 0, 0, 0],
+  text: [xs[0],'', '', '', '', ''],
+  textposition: 'outside',
   type: 'bar',
   marker: {pattern: {shape: 'x', width: 0.5, fillmode: 'overlay'}, color: '#9467bd'},
   },
@@ -1369,7 +1392,8 @@ drawRect();
 //       </div>
 //  </div>
 //  <div class="row">
-//    <div class="col-4">
+//    <div class="col-4" style="text-align: center;">
+//      <span>תצוגת צימוד תרמי - מבט על</span><br>
 //      <svg width="500px" height="500px" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" id="rects_body" class="cartesian" style="border: 1px solid #ddd;">
 //        <defs>
 //          <pattern id="grid3" width="1" height="1" patternUnits="userSpaceOnUse">
@@ -1381,7 +1405,8 @@ drawRect();
 //        </g>
 //      </svg>
 //    </div>
-//    <div class="col" style="max-height: 500px;">
+//    <div class="col" style="max-height: 520px;">
+//      <br>
 //      <div id="plotRects" style="max-height: 500px;" x-show="plot == 'line'">
 //      </div>
 //      <div id="barRects" style="max-height: 500px;" x-show="plot == 'bar'">
@@ -1629,11 +1654,6 @@ setupRects();
 calibrateRectsSvg();
 drawRects();
 }
-                                                      // add toggle red line button
-                                                      // page 2 - average on a few seconds to eliminate gitter of internal energies?
-                                                      // check adding floating labels above bars and not below
-                                                      // remove internal energies from line graph in page 2
-                                                      // add titles to figures - falling body in page 2, top view on page 3
 </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
 </body>
