@@ -1130,7 +1130,9 @@ let v=0;
 let Cs = [];
 let Ls = [];
 let Esps,Eks,Ets,Eps, EKints ;
-let window = 10;
+let window = 1;
+let step_eks = [];
+let step_esp = [];
 
 setupRect = function() {
   document.getElementById('Nx_value').innerHTML = Nx;
@@ -1219,6 +1221,16 @@ function update_svg() {
   })
 }
 
+function update_stepEs()
+{
+  let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
+  Esp = springs.map(s=>0.5*k*((s.L-Math.sqrt((ps_u[s.i1].x-ps_u[s.i2].x)**2+(ps_u[s.i1].y-ps_u[s.i2].y)**2))**2)).reduce((a,b)=>a+b,0);
+  Vcm = {x:ps.map(p=>p.vx).reduce((a,b)=>a+b,0)/ps.length,y:ps.map(p=>p.vy).reduce((a,b)=>a+b,0)/ps.length};
+  EKint = ps.map(p=>0.5*m*(p.vx-Vcm.x)**2+0.5*m*(p.vy-Vcm.y)**2).reduce((a,b)=>a+b,0)
+  step_esp.push(Esp);
+  step_eks.push(EKint);
+}
+
 function updateEs() {
 let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   EkCm = 0.5*m*(ps_u.map(p=>p.vx).reduce((a,b)=>a+b,0)**2+ps_u.map(p=>p.vy).reduce((a,b)=>a+b,0)**2)/ps.length;
@@ -1239,7 +1251,9 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   Eps.y.push(Ep);
   Esps.x.push(t);
   Esps.raw_y.push(Esp);
-  Esps.y.push(Esps.raw_y.slice(-window).reduce((a,b)=>a+b,0)/window);
+  // Esps.y.push(Esps.raw_y.slice(-window).reduce((a,b)=>a+b,0)/window);
+  Esps.y.push(step_esp.reduce((a,b)=>a+b,0)/step_esp.length);
+  step_esp = [];
   Ets.x.push(t);
   Ets.y.push(Et);
   Efloors.x.push(t);
@@ -1248,7 +1262,9 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   Einters.y.push(Einter);
   EKints.x.push(t);
   EKints.raw_y.push(EKint);
-  EKints.y.push(EKints.raw_y.slice(-window).reduce((a,b)=>a+b,0)/window);
+  // EKints.y.push(EKints.raw_y.slice(-window).reduce((a,b)=>a+b,0)/window);
+  EKints.y.push(step_eks.reduce((a,b)=>a+b,0)/step_eks.length);
+  step_eks = [];
   Extrs.x.push(t);
   Extrs.y.push(Eextr);
 
@@ -1332,6 +1348,8 @@ const loopstep = async () => {
   while(loop) {
     for(let l=0;l<steps_per_refresh;l++){
      step()
+     update_stepEs();
+
     }
     await delay(dt_refresh*1000);
     update_svg();
