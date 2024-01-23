@@ -801,7 +801,7 @@ drawBody();
 //  <div class="row">
 //    <div class="row align-items-start">
 //      <div class="col">
-// <button @click="t=0; loopSpring = false; setupSpring(); calibrateSpringSvg(); drawSpring(show_force);" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
+// <button @click="loopSpring = false; setupSpring(); calibrateSpringSvg(); drawSpring(show_force);" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
 // <button onclick="loopSpring = true; delay_factor=1; startSpring();" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
 // <button onclick="loopSpring = false;" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
 // <button onclick="loopSpring = true; delay_factor=5; startSpring();" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
@@ -893,8 +893,8 @@ setupSpring = function(input_dx0 = dx0) {
   Esps = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', marker: {color: colors.p3}};
   Eks = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', marker: {color: colors.p2}};
   Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', marker: {color: colors.p1}};
+  v=t+1; // to ensure updates
   t=0;
-  v+=1;
   loopSpring = false;
   let dx=l0-dx0;
   let a=dx*k/m
@@ -906,7 +906,7 @@ setupSpring = function(input_dx0 = dx0) {
   const div = document.getElementById("plotSpring");
   let data = [Ets, Eks, Esps];
   Esp = 0.5*k*(l0-dx0)**2;
-  Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0, Esp*1.1]}});
+  Plotly.react(div, data, {title: 'התפתחות אנרגיה בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0, Esp*1.1]}});
   Ek = 0;
   const bar = document.getElementById("barSpring");
   const xs = [
@@ -971,7 +971,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
 
   const div = document.getElementById("plotSpring");
   let data = [Ets, Eks, Esps];
-  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0, 0.5*k*((l0-dx0)**2)*1.1]}});
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0, 0.5*k*((l0-dx0)**2)*1.1]}});
   const bar = document.getElementById("barSpring");
   const xs = [
   'כוללת',
@@ -1043,7 +1043,7 @@ drawSpring();
 //  <div class="row">
 //        <div class="row align-items-start">
 //          <div class="col">
-// <button onclick="{t=0; loop = false; setupRect(); calibrateSvg(); drawRect();}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
+// <button onclick="{loop = false; setupRect(); calibrateSvg(); drawRect();}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
 // <button onclick="{loop = true; delay_factor=1; start();}" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
 // <button onclick="{loop = false;}" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
 // <button onclick="{loop = true; delay_factor=5; start();}" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
@@ -1136,15 +1136,17 @@ setupRect = function() {
   document.getElementById('Nx_value').innerHTML = Nx;
   document.getElementById('Ny_value').innerHTML = Ny;
   document.getElementById('y0_rect_value').innerHTML = y0;
+  v = t+1;
+  t = 0;
   i1=0
   ps=[]
   springs=[]
   Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', marker: {color: colors['p1']}};
-  EKints = {raw_y: [], x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', marker: {color: colors['p2']}};
-  Esps = {raw_y: [],x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', marker: {color: colors['p3']}};
+  EKints = {raw_y: [], x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים)', marker: {color: colors['p2']}, visible: 'legendonly'};
+  Esps = {raw_y: [],x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים)', marker: {color: colors['p3']}, visible: 'legendonly'};
   EkCms = {x:[],y:[],type: 'scatter', name: 'תנועה (גוף)', marker: {color: colors['p4']}};
   Eps = {x:[],y:[],type: 'scatter', name: 'כובד (גוף)', marker: {color: colors['p5']}};
-  Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)', marker: {color: colors['p6']}};
+  Einters = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים)', marker: {color: colors['p6']}, visible: 'legendonly'};
   Eks = {x:[],y:[],type: 'scatter', name: 'קינטית חלקיקים', visible: 'legendonly'}
   Efloors = {x:[],y:[],type: 'scatter', name: 'אלסטית קרקע', visible: 'legendonly'}
   Extrs = {x:[],y:[],type: 'scatter', name: 'מכאנית (גוף)'}
@@ -1177,9 +1179,8 @@ setupRect = function() {
   Llim=y0+Nx*L0+Ny*L0+0.2
   const div = document.getElementById("plotRect");
   let data = [Ets, EkCms, Eps, Einters, EKints, Esps];
-  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t+v, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
   Ep = ps.map(p=>m*g*p.y).reduce((a,b)=>a+b,0)-(Ny-1)*L0/2*m*g*Nx*Ny;
-  v+=1
   const bar = document.getElementById("barRect");
   const xs = ['כוללת', 'כובד (גוף)', 'תנועה (גוף)', 'תנועה (חלקיקים)', 'אינטראקציה (חלקיקים)', 'פנימית (חלקיקים)'];
   let data2 = [{
@@ -1254,7 +1255,7 @@ let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
   const div = document.getElementById("plotRect");
   // let data = [Ets, Extrs, EkCms, Eps, Eks, Efloors, Einters, EKints, Esps];
   let data = [Ets, EkCms, Eps, Einters, EKints, Esps];
-  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,m*g*y0*Nx*Ny*1.1]}});
   const bar = document.getElementById("barRect");
   const xs = ['כוללת', 'כובד (גוף)', 'תנועה (גוף)', 'תנועה (חלקיקים)', 'אינטראקציה (חלקיקים)', 'פנימית (חלקיקים)'];
   let data2 = [{
@@ -1353,7 +1354,7 @@ drawRect();
 //  <div class="row">
 //        <div class="row align-items-start">
 //          <div class="col">
-// <button onclick="{t=0; loop = false; setupRects(); calibrateRectsSvg(); drawRects();}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
+// <button onclick="{loop = false; setupRects(); calibrateRectsSvg(); drawRects();}" type="button" title="התחל מחדש" :class="sim_button" style="font-size: 1.5em;">refresh</button>
 // <button onclick="{loop = true; delay_factor=1; startRects();}" type="button" title="הפעל" :class="sim_button" style="font-size: 1.5em;">play_circle</button>
 // <button onclick="{loop = false;}" type="button" title="עצור" :class="sim_button" style="font-size: 1.5em;">pause_circle</button>
 // <button onclick="{loop = true; delay_factor=5; startRects();}" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
@@ -1490,6 +1491,8 @@ setupRects = function() {
   document.getElementById('E01_value').innerHTML = E01;
   document.getElementById('E02_value').innerHTML = E02;
   document.getElementById('couplers_value').innerHTML = couplers;
+  v = t+1;
+  t = 0;
   i1=0
   ps=[]
   springs=[]
@@ -1520,7 +1523,7 @@ setupRects = function() {
 
   const div = document.getElementById("plotRects");
   let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2, Ecoups];
-  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
   v+=1
   let Ek1 = E01*Nx1*Ny1;
   let Ek2 = E02*Nx2*Ny2;
@@ -1600,7 +1603,7 @@ function updateEs() {
 
   const div = document.getElementById("plotRects");
   let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2];
-  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
   const bar = document.getElementById("barRects");
   const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name];
   let data2 = [{
