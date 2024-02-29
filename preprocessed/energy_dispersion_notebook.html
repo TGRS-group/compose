@@ -1380,6 +1380,7 @@ drawRect();
 // <button onclick="{loop = true; delay_factor=5; startRects();}" type="button" title="הילוך איטי" :class="sim_button" style="font-size: 1.5em;">slow_motion_video</button>
 //            <a href="#" role="button" title="הצג התפלגות אנרגיה" :class="sim_button + (plot == 'bar' ? ' active' : '')" @click="plot = plot == 'bar' ? '' : 'bar'" style="font-size: 1.5em;">bar_chart</a>
 //            <a href="#" role="button" title="הצג גרף אנרגיה" :class="sim_button + (plot == 'line' ? ' active' : '')" @click="plot = plot == 'line' ? '' : 'line'" style="font-size: 1.5em;">show_chart</a>
+//            <a href="#" role="button" title="הצג גרף אנרגיה לחלקיק" :class="sim_button + (plot == 'partline' ? ' active' : '')" @click="plot = plot == 'partline' ? '' : 'partline'" style="font-size: 1.5em;">ssid_chart</a>
 //          </div>
 // <div class="col">
 //        <div class="row align-items-start">
@@ -1443,6 +1444,8 @@ drawRect();
 //    <div class="col" style="max-height: 520px;">
 //      <br>
 //      <div id="plotRects" style="max-height: 500px;" x-show="plot == 'line'">
+//      </div>
+//      <div id="plotPartRects" style="max-height: 500px;" x-show="plot == 'partline'">
 //      </div>
 //      <div id="barRects" style="max-height: 500px;" x-show="plot == 'bar'">
 //      </div>
@@ -1518,9 +1521,11 @@ setupRects = function() {
   springs=[]
   Ets = {x:[],y:[],type: 'scatter', name: 'כוללת', marker: {color: colors['p1']}};
   Eks1 = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים) א', marker: {color: colors['p2']}};
+  Eksm1 = {x:[],y:[],type: 'scatter', name: 'תנועה ממוצעת לחלקיק א', marker: {color: colors['p2']}};
   Esps1 = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים) א', marker: {color: colors['p3']}};
   Eints1 = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים) א', marker: {color: colors['p6']}};
   Eks2 = {x:[],y:[],type: 'scatter', name: 'תנועה (חלקיקים) ב', marker: {color: colors['p4']}};
+  Eksm2 = {x:[],y:[],type: 'scatter', name: 'תנועה ממוצעת לחלקיק ב', marker: {color: colors['p4']}};
   Esps2 = {x:[],y:[],type: 'scatter', name: 'אינטראקציה (חלקיקים) ב', marker: {color: colors['p5']}};
   Eints2 = {x:[],y:[],type: 'scatter', name: 'פנימית (חלקיקים) ב', marker: {color: colors['p7']}};
   Ecoups = {x:[],y:[],type: 'scatter', name: 'קישור', marker: {color: colors['p8']}};
@@ -1544,6 +1549,9 @@ setupRects = function() {
   const div = document.getElementById("plotRects");
   let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2, Ecoups];
   Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
+  const divPart = document.getElementById("plotPartRects");
+  let dataPart = [Eksm1, Eksm2];
+  Plotly.react(divPart, dataPart, {title: 'אנרגיה ממוצעת לחלקיק כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01 + E02)*1.1]}});
   v+=1
   let Ek1 = E01*Nx1*Ny1;
   let Ek2 = E02*Nx2*Ny2;
@@ -1608,8 +1616,12 @@ function updateEs() {
   Ets.y.push(Eint1+Eint2+Ecoup);
   Eks1.x.push(t);
   Eks1.y.push(Ek1);
+  Eksm1.x.push(t);
+  Eksm1.y.push(Ek1/(Nx1*Ny1));
   Eks2.x.push(t);
   Eks2.y.push(Ek2);
+  Eksm2.x.push(t);
+  Eksm2.y.push(Ek2/(Nx2*Ny2));
   Esps1.x.push(t);
   Esps1.y.push(Esp1);
   Esps2.x.push(t);
@@ -1624,6 +1636,9 @@ function updateEs() {
   const div = document.getElementById("plotRects");
   let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2];
   Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
+  const divPart = document.getElementById("plotPartRects");
+  let dataPart = [Eksm1, Eksm2];
+  Plotly.react(divPart, dataPart, {title: 'אנרגיה לחלקיק כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01 + E02)*1.1]}});
   const bar = document.getElementById("barRects");
   const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name];
   let data2 = [{
