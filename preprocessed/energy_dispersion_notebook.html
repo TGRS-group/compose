@@ -1604,6 +1604,12 @@ function update_rects_svg() {
 
 function updateEs() {
   let ps_u=ps.map(p=>{return {x:p.x+p.vx*dt/2,y:p.y+p.vy*dt/2,vx:p.vx,vy:p.vy}});
+  Ewalls = ps_u.map(p=>(p.y<boundries.bottom)*0.5*kfloor*((boundries.bottom-p.y)**2)+
+  (p.y>boundries.top)*0.5*kfloor*((boundries.top-p.y)**2)+
+  (p.x<boundries.left)*0.5*kfloor*((boundries.left-p.x)**2)+
+  (p.x>boundries.right)*0.5*kfloor*((boundries.right-p.x)**2))
+  .reduce((a,b)=>a+b,0);
+
   Ek1 = ps.slice(0,Nx1*Ny1).map(p=>0.5*m*(p.vx**2+p.vy**2)).reduce((a,b)=>a+b,0);
   Ek2 = ps.slice(Nx1*Ny1).map(p=>0.5*m*(p.vx**2+p.vy**2)).reduce((a,b)=>a+b,0);
   Esps = springs.map(s=>({l1: ps[s.i1].label, l2: ps[s.i2].label, E: 0.5*k*((s.L-Math.sqrt((ps_u[s.i1].x-ps_u[s.i2].x)**2+(ps_u[s.i1].y-ps_u[s.i2].y)**2))**2)}));
@@ -1613,7 +1619,7 @@ function updateEs() {
   Eint1 = Ek1 + Esp1;
   Eint2 = Ek2 + Esp2;
   Ets.x.push(t);
-  Ets.y.push(Eint1+Eint2+Ecoup);
+  Ets.y.push(Eint1+Eint2+Ecoup+Ewalls);
   Eks1.x.push(t);
   Eks1.y.push(Ek1);
   Eksm1.x.push(t);
