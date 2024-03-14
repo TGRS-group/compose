@@ -1370,7 +1370,7 @@ drawRect();
 }
 
 //+ thermalSim {"type": "html", "target": "thermalSim_output", "page": 3}
-// <div id="page_container" x-data="{plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined', Ny1_ui: 6, Ny2_ui: 6}">
+// <div id="page_container" x-data="{plot: false, sim_button: 'btn btn-primary btn-sm material-symbols-outlined', Ny1_ui: 10, Ny2_ui: 10}">
 //  <div class="row">
 //        <div class="row align-items-start">
 //          <div class="col">
@@ -1387,12 +1387,12 @@ drawRect();
 // <div class="col">
 //  <span id="Nx1_value"></span>
 //  <label for="Nx1Range">חלקיקים לרוחב המלבן</label><br>
-//  <input oninput="{Nx1 = Number(this.value); setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Nx1Range" min="1" max="10" value="7" >
+//  <input oninput="{Nx1 = Number(this.value); setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Nx1Range" min="1" max="10" value="10" >
 // </div>
 // <div class="col">
 //  <span id="Ny1_value"></span>
 //  <label for="Ny1Range" >חלקיקים לגובה המלבן</label><br>
-//  <input oninput="{Ny1 = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Ny1Range" min="2" max="10" value="6" x-model="Ny1_ui">
+//  <input oninput="{Ny1 = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Ny1Range" min="2" max="10" value="10" x-model="Ny1_ui">
 // </div>
 // <div class="col">
 //  <span id="E01_value"></span>
@@ -1411,12 +1411,12 @@ drawRect();
 // <div class="col">
 //  <span id="Nx2_value"></span>
 //  <label for="Nx2Range">חלקיקים לרוחב המלבן</label><br>
-//  <input oninput="{Nx2 = Number(this.value); setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Nx2Range" min="1" max="10" value="7" >
+//  <input oninput="{Nx2 = Number(this.value); setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Nx2Range" min="1" max="10" value="10" >
 // </div>
 // <div class="col">
 //  <span id="Ny2_value"></span>
 //  <label for="Ny2Range" >חלקיקים לגובה המלבן</label><br>
-//  <input oninput="{Ny2 = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Ny2Range" min="2" max="10" value="6" x-model="Ny2_ui">
+//  <input oninput="{Ny2 = Number(this.value);  setupRects(); calibrateRectsSvg(); drawRects();}" type="range" id="Ny2Range" min="2" max="10" value="10" x-model="Ny2_ui">
 // </div>
 // <div class="col">
 //  <span id="E02_value"></span>
@@ -1455,8 +1455,8 @@ drawRect();
 //+ rectanglesSimulation {"type": "javascriptCell", "page": 3}
 function rectanglesSimulation(){function print(string) {getBlockTarget('rectanglesSimulation').innerHTML += string + '<br>';}
 let draw_lines = true;
-Nx1 = 7;
-Ny1 = 6;
+Nx1 = 10;
+Ny1 = 10;
 couplers = 2;
 Nx2 = Nx1;
 Ny2 = Ny1;
@@ -1558,17 +1558,17 @@ setupRects = function() {
   let Eint1 = Ek1;
   let Eint2 = Ek2;
   const bar = document.getElementById("barRects");
-  const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name];
+  const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name, 'אינטראקצית קירות'];
   let data2 = [
   {
   x: xs,
-  y: [Eint1,Ek1,0,Ek1,0,0,0,0],
+  y: [Eint1,Ek1,0,Ek1,0,0,0,0,0],
   type: 'bar',
   marker: Eks1.marker,
   },
  {
   x: xs,
-  y: [Eint2,0,0,0,Ek2,0,Ek2,0],
+  y: [Eint2,0,0,0,Ek2,0,Ek2,0,0],
   type: 'bar',
   marker: Eks2.marker,
   },
@@ -1646,36 +1646,42 @@ function updateEs() {
   let dataPart = [Eksm1, Eksm2];
   Plotly.react(divPart, dataPart, {title: 'אנרגיה לחלקיק כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01 + E02)*1.1]}});
   const bar = document.getElementById("barRects");
-  const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name];
+  const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name, 'אינטראקצית קירות'];
   let data2 = [{
   x: xs,
-  y: [Ek1, Ek1, 0, Ek1, 0, 0, 0, 0],
+  y: [Ek1, Ek1, 0, Ek1, 0, 0, 0, 0, 0],
   type: 'bar',
   marker: Eks1.marker,
   },
   {
   x: xs,
-  y: [Esp1, 0, Esp1, Esp1, 0, 0, 0, 0],
+  y: [Esp1, 0, Esp1, Esp1, 0, 0, 0, 0, 0],
   type: 'bar',
   marker: Esps1.marker,
   },
   {
   x: xs,
-  y: [Ek2, 0, 0, 0, Ek2, 0, Ek2, 0],
+  y: [Ek2, 0, 0, 0, Ek2, 0, Ek2, 0, 0],
   type: 'bar',
   marker: Eks2.marker,
   },
   {
   x: xs,
-  y: [Esp2, 0, 0, 0, 0, Esp2, Esp2, 0],
+  y: [Esp2, 0, 0, 0, 0, Esp2, Esp2, 0, 0],
   type: 'bar',
   marker: Esps2.marker,
   },
   {
   x: xs,
-  y: [Ecoup, 0, 0, 0, 0, 0, 0, Ecoup],
+  y: [Ecoup, 0, 0, 0, 0, 0, 0, Ecoup, 0],
   type: 'bar',
   marker: Ecoups.marker,
+  },
+{
+  x: xs,
+  y: [Ewalls, 0, 0, 0, 0, 0, 0, 0, Ewalls],
+  type: 'bar',
+  marker: {color: 'gray'},
   },
   ];
   Plotly.react(bar, data2, {title: 'מופעי האנרגיה', barmode: 'stack', showlegend: false, datarevision: t+v, xaxis: {title: 'סוג אנרגיה'}, yaxis: {title: 'אנרגיה [ג\'ול]',range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
