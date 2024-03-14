@@ -1548,10 +1548,10 @@ setupRects = function() {
 
   const div = document.getElementById("plotRects");
   let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2, Ecoups];
-  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]', gridcolor: 'black'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1], gridcolor: 'black'}});
   const divPart = document.getElementById("plotPartRects");
   let dataPart = [Eksm1, Eksm2];
-  Plotly.react(divPart, dataPart, {title: 'אנרגיה ממוצעת לחלקיק כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01 + E02)*1.1]}});
+  Plotly.react(divPart, dataPart, {title: 'אנרגיה ממוצעת לחלקיק כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]', gridcolor: 'black'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01 + E02)*1.1], gridcolor: 'black'}});
   v+=1
   let Ek1 = E01*Nx1*Ny1;
   let Ek2 = E02*Nx2*Ny2;
@@ -1641,10 +1641,10 @@ function updateEs() {
 
   const div = document.getElementById("plotRects");
   let data = [Ets, Eks1, Esps1, Eints1, Eks2, Esps2, Eints2];
-  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1]}});
+  Plotly.react(div, data, {title: 'אנרגיה כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]', gridcolor: 'black'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01*Nx1*Ny1 + E02*Nx2*Ny2)*1.1], gridcolor: 'black'}});
   const divPart = document.getElementById("plotPartRects");
   let dataPart = [Eksm1, Eksm2];
-  Plotly.react(divPart, dataPart, {title: 'אנרגיה לחלקיק כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01 + E02)*1.1]}});
+  Plotly.react(divPart, dataPart, {title: 'אנרגיה לחלקיק כתלות בזמן', datarevision: v+t, xaxis: {title: 'זמן [שניות]', gridcolor: 'black'}, yaxis: {title: 'אנרגיה [ג\'ול]', range: [0,(E01 + E02)*1.1], gridcolor: 'black'}});
   const bar = document.getElementById("barRects");
   const xs = [Ets.name, Eks1.name, Esps1.name, Eints1.name, Eks2.name, Esps2.name, Eints2.name, Ecoups.name, 'אינטראקצית קירות'];
   let data2 = [{
